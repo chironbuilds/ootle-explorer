@@ -1,7 +1,8 @@
 import { NavLink, Outlet } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
-import { getNetworkInfo } from "../lib/indexer";
+import { getIdentity, getNetworkInfo } from "../lib/indexer";
 import { SearchBar } from "./SearchBar";
+import { Hash } from "./Hash";
 
 function Logo() {
   return (
@@ -39,6 +40,18 @@ function NetworkPill() {
         </>
       )}
     </div>
+  );
+}
+
+function NodeIdentity() {
+  const { data } = useQuery({ queryKey: ["identity"], queryFn: getIdentity, staleTime: 60_000 });
+  if (!data) return null;
+  return (
+    <p className="mt-2 flex flex-wrap items-center gap-1.5">
+      <span>Indexer peer id</span>
+      <Hash value={data.peer_id} link={false} className="text-ink-dim" />
+      {data.public_addresses[0] && <span className="text-ink-dim">· {data.public_addresses[0]}</span>}
+    </p>
   );
 }
 
@@ -101,6 +114,7 @@ export function Layout() {
           </a>
           . Independent, unofficial project.
         </p>
+        <NodeIdentity />
       </footer>
     </div>
   );

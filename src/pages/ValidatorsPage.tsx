@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
 import { listValidators } from "../lib/indexer";
-import { Card, ErrorBlock, LoadingBlock, PageHeader } from "../components/ui";
+import { Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader } from "../components/ui";
 import { Hash } from "../components/Hash";
+import { Disclosure } from "../components/Disclosure";
 
 export default function ValidatorsPage() {
   const query = useQuery({ queryKey: ["validators"], queryFn: () => listValidators(100) });
@@ -21,17 +22,30 @@ export default function ValidatorsPage() {
             <span className="text-right">Vote power</span>
           </div>
           {query.data.validators.map((v) => (
-            <div
+            <Disclosure
               key={v.public_key}
-              className="grid grid-cols-1 gap-1.5 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[minmax(0,2fr)_140px_120px_110px] sm:items-center sm:gap-3"
+              className="border-b border-border-soft last:border-0"
+              summary={
+                <div className="grid w-full grid-cols-1 gap-1.5 sm:grid-cols-[minmax(0,2fr)_140px_120px_110px] sm:items-center sm:gap-3">
+                  <Hash value={v.public_key} link={false} />
+                  <span className="tabular text-xs text-ink-dim">
+                    {v.shard_group.start}–{v.shard_group.end_inclusive}
+                  </span>
+                  <span className="tabular text-xs text-ink-faint">{v.start_epoch}</span>
+                  <span className="tabular text-right text-xs text-ink-dim">{v.vote_power}</span>
+                </div>
+              }
             >
-              <Hash value={v.public_key} link={false} />
-              <span className="tabular text-xs text-ink-dim">
-                {v.shard_group.start}–{v.shard_group.end_inclusive}
-              </span>
-              <span className="tabular text-xs text-ink-faint">{v.start_epoch}</span>
-              <span className="tabular text-right text-xs text-ink-dim">{v.vote_power}</span>
-            </div>
+              <div className="rounded-lg border border-border-soft">
+                <KeyValueRow label="Peer ID">
+                  <span className="font-mono text-xs text-ink">{v.peer_id}</span>
+                </KeyValueRow>
+                <KeyValueRow label="Fee claim public key">
+                  <Hash value={v.fee_claim_public_key} link={false} />
+                </KeyValueRow>
+                <KeyValueRow label="Active until">{v.end_epoch === null ? "still active" : `epoch ${v.end_epoch}`}</KeyValueRow>
+              </div>
+            </Disclosure>
           ))}
         </Card>
       )}
