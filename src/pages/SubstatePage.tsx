@@ -101,7 +101,7 @@ export default function SubstatePage() {
               ) : null;
             })()}
           {kind === "component" && <VaultBalances componentState={readComponentState(query.data)} />}
-          {kind === "component" && <ComponentActivity componentAddress={id} />}
+          {kind === "component" && <ComponentActivity componentAddress={id} componentState={readComponentState(query.data)} />}
           {kind === "resource" &&
             (() => {
               const info = readResourceInfo(query.data);
