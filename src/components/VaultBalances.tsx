@@ -46,7 +46,7 @@ export function VaultBalances({ componentState }: { componentState: unknown }) {
       {loading && <LoadingBlock label="Loading vault balances…" />}
       {!loading && (
         <Card>
-          <div className="hidden grid-cols-[minmax(0,2fr)_auto_auto] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
+          <div className="hidden grid-cols-[minmax(0,2fr)_160px_180px] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
             <span>Resource</span>
             <span className="text-right">Balance</span>
             <span></span>
@@ -58,7 +58,7 @@ export function VaultBalances({ componentState }: { componentState: unknown }) {
             return (
               <div
                 key={i}
-                className="grid grid-cols-1 gap-1.5 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[minmax(0,2fr)_auto_auto] sm:items-center sm:gap-3"
+                className="grid grid-cols-1 gap-1.5 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[minmax(0,2fr)_160px_180px] sm:items-center sm:gap-3"
               >
                 <Hash value={r.address} />
                 <span className="tabular text-right text-sm text-ink">

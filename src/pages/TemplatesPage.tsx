@@ -34,7 +34,7 @@ export default function TemplatesPage() {
       {query.isError && <ErrorBlock message={(query.error as Error).message} />}
       {query.data && (
         <Card>
-          <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
+          <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,2fr)_90px_70px] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
             <span>Name</span>
             <span>Address</span>
             <span>Size</span>
@@ -43,7 +43,7 @@ export default function TemplatesPage() {
           {visible.map((t) => (
             <div
               key={t.address}
-              className="grid grid-cols-2 gap-2 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto] sm:items-center sm:gap-3"
+              className="grid grid-cols-2 gap-2 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_90px_70px] sm:items-center sm:gap-3"
             >
               <span className="font-medium text-ink">{t.name}</span>
               <Hash value={t.address} link={false} />

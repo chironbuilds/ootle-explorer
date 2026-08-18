@@ -14,7 +14,7 @@ export default function ValidatorsPage() {
       {query.isError && <ErrorBlock message={(query.error as Error).message} />}
       {query.data && (
         <Card>
-          <div className="hidden grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto_auto] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
+          <div className="hidden grid-cols-[minmax(0,2fr)_140px_120px_110px] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
             <span>Public key</span>
             <span>Shard group</span>
             <span>Since epoch</span>
@@ -23,7 +23,7 @@ export default function ValidatorsPage() {
           {query.data.validators.map((v) => (
             <div
               key={v.public_key}
-              className="grid grid-cols-1 gap-1.5 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[minmax(0,2fr)_minmax(0,1fr)_auto_auto] sm:items-center sm:gap-3"
+              className="grid grid-cols-1 gap-1.5 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[minmax(0,2fr)_140px_120px_110px] sm:items-center sm:gap-3"
             >
               <Hash value={v.public_key} link={false} />
               <span className="tabular text-xs text-ink-dim">

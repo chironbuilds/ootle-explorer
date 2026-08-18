@@ -57,7 +57,7 @@ export function ResourceActivity({
       {query.isError && <ErrorBlock message={(query.error as Error).message} />}
       {query.data && (
         <Card>
-          <div className="hidden grid-cols-[auto_minmax(0,1.5fr)_auto_minmax(0,1.5fr)] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
+          <div className="hidden grid-cols-[104px_minmax(0,1.5fr)_150px_minmax(0,1.5fr)] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
             <span>Event</span>
             <span>Location</span>
             <span className="text-right">Amount</span>
@@ -71,7 +71,7 @@ export function ResourceActivity({
               return (
                 <div
                   key={`${txId}-${i}`}
-                  className="grid grid-cols-2 gap-2 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[auto_minmax(0,1.5fr)_auto_minmax(0,1.5fr)] sm:items-center sm:gap-3"
+                  className="grid grid-cols-2 gap-2 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[104px_minmax(0,1.5fr)_150px_minmax(0,1.5fr)] sm:items-center sm:gap-3"
                 >
                   <TopicBadge topic={event.topic} />
                   {event.substate_id ? <Hash value={event.substate_id} /> : <span className="text-ink-faint">—</span>}

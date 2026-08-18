@@ -15,7 +15,7 @@ function TxRow({ tx }: { tx: RecentTransactionSummary }) {
   const body = readTxBody(tx.transaction);
   const stealth = isStealthTransaction(body);
   return (
-    <Link to={`/tx/${tx.transaction_id}`} className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-border-soft px-5 py-3.5 last:border-0 hover:bg-surface-2 sm:grid-cols-[minmax(0,2.2fr)_auto_auto_auto]">
+    <Link to={`/tx/${tx.transaction_id}`} className="grid grid-cols-[1fr_auto] items-center gap-3 border-b border-border-soft px-5 py-3.5 last:border-0 hover:bg-surface-2 sm:grid-cols-[minmax(0,2.2fr)_110px_150px_90px]">
       <Hash value={tx.transaction_id} link={false} />
       <div className="hidden sm:block">
         <VeilBadge veiled={stealth} />
@@ -102,7 +102,7 @@ export default function HomePage() {
       {recent.isError && <ErrorBlock message={(recent.error as Error).message} />}
       {recent.data && (
         <Card>
-          <div className="hidden grid-cols-[minmax(0,2.2fr)_auto_auto_auto] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
+          <div className="hidden grid-cols-[minmax(0,2.2fr)_110px_150px_90px] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
             <span>Transaction</span>
             <span>Privacy</span>
             <span>Outcome</span>
