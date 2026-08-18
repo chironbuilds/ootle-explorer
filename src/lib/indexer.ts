@@ -229,11 +229,20 @@ export interface QueryTransactionEventsResponse {
 /** `resource_address` matches an event either by substate id (std.resource.* events, e.g. mint/burn,
  * where the resource itself is the event's subject) or by a `resource_address` field in the payload
  * (std.vault.deposit/withdraw, where a vault moved that resource) -- see the indexer's own
- * `QueryTransactionEventsRequest` doc. Unlike `/transactions/recent`, `offset` here is a real,
- * confirmed-working offset, not a no-op. */
-export const queryTransactionEvents = (params: { resourceAddress?: string; topic?: string; limit?: number; offset?: number }) =>
+ * `QueryTransactionEventsRequest` doc. `substate_id` is the more general, exact-match filter it also
+ * accepts -- any substate (component, vault, ...) as the event's own subject, e.g.
+ * `std.component.created`/`updated` plus whatever custom events a component's own template emits.
+ * Unlike `/transactions/recent`, `offset` here is a real, confirmed-working offset, not a no-op. */
+export const queryTransactionEvents = (params: {
+  resourceAddress?: string;
+  substateId?: string;
+  topic?: string;
+  limit?: number;
+  offset?: number;
+}) =>
   get<QueryTransactionEventsResponse>("/transactions/events", {
     resource_address: params.resourceAddress,
+    substate_id: params.substateId,
     topic: params.topic,
     limit: params.limit ?? 25,
     offset: params.offset ?? 0,

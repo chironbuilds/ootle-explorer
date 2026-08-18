@@ -7,6 +7,7 @@ import { Hash } from "../components/Hash";
 import { JsonTree } from "../components/JsonTree";
 import { VaultBalances } from "../components/VaultBalances";
 import { ResourceActivity } from "../components/ResourceActivity";
+import { ComponentActivity } from "../components/ComponentActivity";
 
 interface ComponentSubstate {
   header?: { template_address?: string; owner_rule?: { ByPublicKey?: string } };
@@ -100,6 +101,7 @@ export default function SubstatePage() {
               ) : null;
             })()}
           {kind === "component" && <VaultBalances componentState={readComponentState(query.data)} />}
+          {kind === "component" && <ComponentActivity componentAddress={id} />}
           {kind === "resource" &&
             (() => {
               const info = readResourceInfo(query.data);
