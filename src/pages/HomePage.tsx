@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
 import { getNetworkEconomics, listRecentTransactions, type RecentTransactionSummary } from "../lib/indexer";
@@ -6,6 +7,9 @@ import { readTxBody, isStealthTransaction } from "../lib/txShape";
 import { Card, ErrorBlock, LoadingBlock, StatTile } from "../components/ui";
 import { Hash } from "../components/Hash";
 import { StatusPill, VeilBadge } from "../components/StatusPill";
+import { Pagination } from "../components/Pagination";
+
+const PAGE_SIZE = 20;
 
 function TxRow({ tx }: { tx: RecentTransactionSummary }) {
   const body = readTxBody(tx.transaction);
@@ -26,11 +30,41 @@ function TxRow({ tx }: { tx: RecentTransactionSummary }) {
 
 export default function HomePage() {
   const economics = useQuery({ queryKey: ["economics"], queryFn: getNetworkEconomics, refetchInterval: 20_000 });
+
+  // Cursor-based paging: the indexer's `last_id` is a cursor (the previous page's last
+  // transaction id), not a numeric offset -- `cursors[i]` is the cursor used to fetch page i+1,
+  // so `cursors[0]` is always undefined (first page, no cursor needed).
+  const [cursors, setCursors] = useState<(string | undefined)[]>([undefined]);
+  const [pageIndex, setPageIndex] = useState(0);
+  const cursor = cursors[pageIndex];
+
   const recent = useQuery({
-    queryKey: ["recent-transactions"],
-    queryFn: () => listRecentTransactions(20),
-    refetchInterval: 8_000,
+    queryKey: ["recent-transactions", cursor ?? "first"],
+    queryFn: () => listRecentTransactions(PAGE_SIZE, cursor),
+    // Only auto-refresh the live first page -- refreshing an older page out from under someone
+    // mid-read would shift its contents underneath them.
+    refetchInterval: pageIndex === 0 ? 8_000 : false,
   });
+
+  const transactions = recent.data?.transactions ?? [];
+  const canNext = transactions.length === PAGE_SIZE;
+  const canPrev = pageIndex > 0;
+
+  const goNext = () => {
+    if (!canNext) return;
+    const lastId = transactions[transactions.length - 1]!.transaction_id;
+    setCursors((prev) => {
+      const next = prev.slice(0, pageIndex + 1);
+      next[pageIndex + 1] = lastId;
+      return next;
+    });
+    setPageIndex((p) => p + 1);
+  };
+
+  const goPrev = () => {
+    if (!canPrev) return;
+    setPageIndex((p) => p - 1);
+  };
 
   return (
     <div>
@@ -74,11 +108,12 @@ export default function HomePage() {
             <span>Outcome</span>
             <span className="text-right">Age</span>
           </div>
-          {recent.data.transactions.length === 0 ? (
+          {transactions.length === 0 ? (
             <p className="px-5 py-10 text-center text-sm text-ink-dim">No transactions yet.</p>
           ) : (
-            recent.data.transactions.map((tx) => <TxRow key={tx.transaction_id} tx={tx} />)
+            transactions.map((tx) => <TxRow key={tx.transaction_id} tx={tx} />)
           )}
+          <Pagination page={pageIndex + 1} canPrev={canPrev} canNext={canNext} onPrev={goPrev} onNext={goNext} disabled={recent.isFetching} />
         </Card>
       )}
     </div>

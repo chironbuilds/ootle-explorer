@@ -1,7 +1,14 @@
+import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { listCachedTemplates } from "../lib/indexer";
 import { Card, ErrorBlock, LoadingBlock, PageHeader } from "../components/ui";
 import { Hash } from "../components/Hash";
+import { Pagination } from "../components/Pagination";
+
+// The indexer caps `limit` at 100 server-side; there are well under 100 cached templates today,
+// so one fetch at the max gets the complete set to paginate over client-side.
+const FETCH_LIMIT = 100;
+const PAGE_SIZE = 20;
 
 function formatBytes(n: number): string {
   if (n < 1024) return `${n} B`;
@@ -10,7 +17,14 @@ function formatBytes(n: number): string {
 }
 
 export default function TemplatesPage() {
-  const query = useQuery({ queryKey: ["templates"], queryFn: () => listCachedTemplates(100) });
+  // The indexer's `templates/cached` route only accepts `limit` -- no cursor or offset -- so
+  // there's no server-side page to ask for. Pagination here is client-side over one larger fetch.
+  const query = useQuery({ queryKey: ["templates"], queryFn: () => listCachedTemplates(FETCH_LIMIT) });
+  const [page, setPage] = useState(0);
+
+  const all = query.data?.templates ?? [];
+  const pageCount = Math.max(1, Math.ceil(all.length / PAGE_SIZE));
+  const visible = all.slice(page * PAGE_SIZE, page * PAGE_SIZE + PAGE_SIZE);
 
   return (
     <div>
@@ -26,7 +40,7 @@ export default function TemplatesPage() {
             <span>Size</span>
             <span>Epoch</span>
           </div>
-          {query.data.templates.map((t) => (
+          {visible.map((t) => (
             <div
               key={t.address}
               className="grid grid-cols-2 gap-2 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_auto_auto] sm:items-center sm:gap-3"
@@ -37,6 +51,14 @@ export default function TemplatesPage() {
               <span className="tabular text-xs text-ink-faint">{t.epoch}</span>
             </div>
           ))}
+          <Pagination
+            page={page + 1}
+            pageCount={pageCount}
+            canPrev={page > 0}
+            canNext={page < pageCount - 1}
+            onPrev={() => setPage((p) => Math.max(0, p - 1))}
+            onNext={() => setPage((p) => Math.min(pageCount - 1, p + 1))}
+          />
         </Card>
       )}
     </div>

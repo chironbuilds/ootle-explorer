@@ -105,8 +105,11 @@ export interface RecentTransactionsResponse {
   transactions: RecentTransactionSummary[];
 }
 
-export const listRecentTransactions = (limit = 25, offset = 0) =>
-  get<RecentTransactionsResponse>("/transactions/recent", { limit, offset });
+/** `lastId` is a cursor, not an offset -- the indexer's `ListRecentTransactionsRequest` only
+ * accepts `limit`/`last_id` (no numeric offset), so paging forward means passing the last
+ * transaction id of the previous page. */
+export const listRecentTransactions = (limit = 25, lastId?: string) =>
+  get<RecentTransactionsResponse>("/transactions/recent", { limit, last_id: lastId });
 
 export interface TransactionDetailResponse {
   transaction: RecentTransactionSummary;
