@@ -1,0 +1,110 @@
+@import "tailwindcss";
+
+@theme {
+  --font-display: "Bricolage Grotesque", ui-sans-serif, system-ui, sans-serif;
+  --font-body: "IBM Plex Sans", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", monospace;
+}
+
+:root {
+  /* Ground / surfaces -- cool-neutral near-black, not pure black */
+  --ground: #0b0d10;
+  --surface: #14171c;
+  --surface-2: #1b1f26;
+  --surface-3: #232833;
+  --border: #262b33;
+  --border-soft: #1d2129;
+
+  /* Text */
+  --ink: #e9ebee;
+  --ink-dim: #9aa1ac;
+  --ink-faint: #5b6270;
+
+  /* Brand accent -- teal, the product's own identity (privacy / the veil) */
+  --accent: #35c9b0;
+  --accent-strong: #55e0c8;
+  --accent-dim: #1f9e8f;
+  --accent-wash: rgba(53, 201, 176, 0.1);
+
+  /* Semantic -- "revealed" (public, cleartext values) */
+  --reveal: #e4b979;
+  --reveal-wash: rgba(228, 185, 121, 0.1);
+
+  /* Semantic -- "veiled" (confidential / stealth values) */
+  --veil: #9b8afb;
+  --veil-wash: rgba(155, 138, 251, 0.12);
+
+  /* Semantic status */
+  --success: #4cc38a;
+  --success-wash: rgba(76, 195, 138, 0.1);
+  --pending: #e0a458;
+  --pending-wash: rgba(224, 164, 88, 0.1);
+  --danger: #e0637a;
+  --danger-wash: rgba(224, 99, 122, 0.1);
+}
+
+@theme inline {
+  --color-ground: var(--ground);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-border: var(--border);
+  --color-border-soft: var(--border-soft);
+  --color-ink: var(--ink);
+  --color-ink-dim: var(--ink-dim);
+  --color-ink-faint: var(--ink-faint);
+  --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
+  --color-accent-dim: var(--accent-dim);
+  --color-reveal: var(--reveal);
+  --color-veil: var(--veil);
+  --color-success: var(--success);
+  --color-pending: var(--pending);
+  --color-danger: var(--danger);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  color-scheme: dark;
+}
+
+body {
+  margin: 0;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-body);
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: var(--accent-wash);
+  color: var(--accent-strong);
+}
+
+* {
+  scrollbar-color: var(--border) transparent;
+  scrollbar-width: thin;
+}
+
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
