@@ -80,8 +80,9 @@ export default function SubstatePage() {
       {query.isError &&
         (kind === "utxo" ? (
           <Card className="px-5 py-8 text-center text-sm text-ink-dim">
-            This indexer can't look up stealth UTXO substates directly by address (a known limitation on its end, not this transaction) — try
-            opening it from the transaction that spent or created it instead.
+            This UTXO has most likely already been spent. The indexer only tracks current, unspent state — once a stealth UTXO is consumed, a
+            direct lookup like this one fails on its end (a bug in how it reports "gone", not something specific to this one) — but it's still
+            visible in full on the transaction that spent it, and on the transaction that created it if that one's still cached.
           </Card>
         ) : (
           <ErrorBlock message={(query.error as Error).message} />
