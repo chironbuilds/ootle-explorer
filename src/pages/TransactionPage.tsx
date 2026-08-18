@@ -107,7 +107,8 @@ export default function TransactionPage() {
         )}
         {body.sealSignerPublicKey && (
           <KeyValueRow label="Seal signer">
-            <Hash value={body.sealSignerPublicKey} />
+            {/* A public key, not a transaction id -- despite being the same 64-hex shape, it has no detail page. */}
+            <Hash value={body.sealSignerPublicKey} link={false} />
           </KeyValueRow>
         )}
       </Card>

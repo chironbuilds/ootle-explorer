@@ -34,7 +34,15 @@ export default function SubstatePage() {
       />
 
       {query.isLoading && <LoadingBlock label="Loading substate…" />}
-      {query.isError && <ErrorBlock message={(query.error as Error).message} />}
+      {query.isError &&
+        (kind === "utxo" ? (
+          <Card className="px-5 py-8 text-center text-sm text-ink-dim">
+            This indexer can't look up stealth UTXO substates directly by address (a known limitation on its end, not this transaction) — try
+            opening it from the transaction that spent or created it instead.
+          </Card>
+        ) : (
+          <ErrorBlock message={(query.error as Error).message} />
+        ))}
       {query.data && (
         <Card className="px-5 py-4">
           <JsonTree data={query.data} />

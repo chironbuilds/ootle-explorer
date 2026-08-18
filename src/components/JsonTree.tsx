@@ -2,19 +2,23 @@ import { useState } from "react";
 import { Hash } from "./Hash";
 import { linkForId } from "../lib/links";
 
-const HASHLIKE = /^[0-9a-f]{16,}$/i;
 const IDLIKE = /^(component|resource|vault|nft|utxo|template|txreceipt)_[0-9a-f_]+$/i;
+// Bare (unprefixed) 64-hex values are ambiguous -- a public key, mask, commitment, signature, or
+// content hash is exactly as hex-shaped as a transaction id, and far more common in this data. Only
+// treat one as a transaction id when its own JSON key says so, never from shape alone.
+const TX_REF_KEY = /^(transaction_id|transaction_hash|last_id|tx_id)$/i;
 
-function isLinkable(value: string): boolean {
-  return IDLIKE.test(value) || (HASHLIKE.test(value) && linkForId(value) !== null);
+function isSubstateId(value: string): boolean {
+  return IDLIKE.test(value);
 }
 
-function Primitive({ value }: { value: string | number | boolean | null }) {
+function Primitive({ label, value }: { label?: string; value: string | number | boolean | null }) {
   if (value === null) return <span className="text-ink-faint">null</span>;
   if (typeof value === "boolean") return <span className="text-veil">{String(value)}</span>;
   if (typeof value === "number") return <span className="tabular text-reveal">{value}</span>;
   if (typeof value === "string") {
-    if (isLinkable(value)) return <Hash value={value} />;
+    if (isSubstateId(value)) return <Hash value={value} />;
+    if (label && TX_REF_KEY.test(label) && linkForId(value) !== null) return <Hash value={value} />;
     if (/^\d+$/.test(value) && value.length > 4) return <span className="tabular text-reveal">"{value}"</span>;
     return <span className="text-ink">"{value}"</span>;
   }
@@ -28,7 +32,7 @@ function Node({ label, value, depth }: { label?: string; value: unknown; depth: 
     return (
       <div className="py-0.5 pl-4" style={{ marginLeft: depth === 0 ? 0 : 12 }}>
         {label !== undefined && <span className="text-ink-dim">{label}: </span>}
-        <Primitive value={value as string | number | boolean | null} />
+        <Primitive label={label} value={value as string | number | boolean | null} />
       </div>
     );
   }
