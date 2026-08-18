@@ -3,11 +3,12 @@ import { useParams } from "react-router-dom";
 import { getTransaction, getTransactionResult } from "../lib/indexer";
 import { readTxBody, isStealthTransaction } from "../lib/txShape";
 import { formatAbsoluteTime, formatMicroTari, formatRelativeTime } from "../lib/format";
-import { Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel } from "../components/ui";
+import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel } from "../components/ui";
 import { Hash } from "../components/Hash";
 import { StatusPill, VeilBadge } from "../components/StatusPill";
 import { JsonTree } from "../components/JsonTree";
 import { InstructionSummary } from "../components/InstructionSummary";
+import { Disclosure } from "../components/Disclosure";
 
 /** Recursively finds the first array at a field named `key` -- the result envelope's exact
  * nesting (Finalized/Commit/Reject wrapping) varies more than is worth hand-modeling here. */
@@ -35,18 +36,69 @@ function InstructionList({ instructions, empty }: { instructions: unknown[]; emp
   return (
     <div className="divide-y divide-border-soft">
       {instructions.map((instr, i) => (
-        <details key={i} className="group px-5 py-3.5">
-          <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
-            <svg width="9" height="9" viewBox="0 0 10 10" fill="none" className="shrink-0 text-ink-faint transition-transform group-open:rotate-90">
-              <path d="M3 1.5l4 3.5-4 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
-            </svg>
-            <InstructionSummary instruction={instr} />
-          </summary>
-          <div className="mt-2 pl-4">
-            <JsonTree data={instr} />
-          </div>
-        </details>
+        <Disclosure key={i} summary={<InstructionSummary instruction={instr} />}>
+          <JsonTree data={instr} />
+        </Disclosure>
       ))}
+    </div>
+  );
+}
+
+/** A created (`up_substates`) UTXO's value, per `SubstateId::Utxo` -- `output.output` carries the
+ * confidential commitment itself (only `minimum_value_promise` is ever cleartext; 0 means fully
+ * hidden), `output.auth.Key` is the spending authority. */
+interface UtxoUpValue {
+  substate?: {
+    Utxo?: {
+      output?: {
+        output?: { minimum_value_promise?: number };
+        auth?: { Key?: string };
+      };
+      is_frozen?: boolean;
+    };
+  };
+}
+
+function readUtxoUp(value: unknown): { minValuePromise: number; authKey?: string } {
+  const utxo = (value as UtxoUpValue | undefined)?.substate?.Utxo;
+  return { minValuePromise: utxo?.output?.output?.minimum_value_promise ?? 0, authKey: utxo?.output?.auth?.Key };
+}
+
+function UtxoSection({ upSubstates, downSubstates }: { upSubstates: [string, unknown][]; downSubstates: [string, number][] }) {
+  const created = upSubstates.filter(([id]) => id.startsWith("utxo_"));
+  const spent = downSubstates.filter(([id]) => id.startsWith("utxo_"));
+  if (created.length === 0 && spent.length === 0) return null;
+
+  return (
+    <div className="mb-8">
+      <SectionLabel>UTXOs ({created.length + spent.length})</SectionLabel>
+      <Card>
+        {created.map(([id, value]) => {
+          const { minValuePromise, authKey } = readUtxoUp(value);
+          return (
+            <div key={id} className="flex flex-wrap items-center gap-2 border-b border-border-soft px-5 py-3.5 last:border-0">
+              <Badge tone="reveal">created</Badge>
+              <Hash value={id} />
+              <VeilBadge veiled={minValuePromise === 0} />
+              {minValuePromise > 0 && (
+                <span className="tabular text-xs text-ink-faint">min value {formatMicroTari(minValuePromise)} tTARI</span>
+              )}
+              {authKey && (
+                <span className="flex items-center gap-1.5 text-xs text-ink-faint">
+                  spendable by <Hash value={authKey} link={false} className="text-xs" />
+                </span>
+              )}
+            </div>
+          );
+        })}
+        {spent.map(([id, version]) => (
+          <div key={id} className="flex flex-wrap items-center gap-2 border-b border-border-soft px-5 py-3.5 last:border-0">
+            <Badge tone="veil">spent</Badge>
+            <Hash value={id} />
+            <span className="tabular text-xs text-ink-faint">v{version}</span>
+          </div>
+        ))}
+      </Card>
     </div>
   );
 }
@@ -79,7 +131,8 @@ export default function TransactionPage() {
   const body = readTxBody(tx.transaction);
   const stealth = isStealthTransaction(body);
   const events = resultQuery.data ? (findArrayField(resultQuery.data, "events") as TxEvent[] | null) : null;
-  const diff = resultQuery.data ? findArrayField(resultQuery.data, "upped") : null;
+  const upSubstates = resultQuery.data ? (findArrayField(resultQuery.data, "up_substates") as [string, unknown][] | null) : null;
+  const downSubstates = resultQuery.data ? (findArrayField(resultQuery.data, "down_substates") as [string, number][] | null) : null;
 
   return (
     <div>
@@ -185,11 +238,35 @@ export default function TransactionPage() {
         {events && events.length === 0 && <Card className="px-5 py-6 text-sm text-ink-faint">No events.</Card>}
       </div>
 
-      {diff && (
+      {(upSubstates || downSubstates) && <UtxoSection upSubstates={upSubstates ?? []} downSubstates={downSubstates ?? []} />}
+
+      {((upSubstates?.length ?? 0) > 0 || (downSubstates?.length ?? 0) > 0) && (
         <div className="mb-8">
-          <SectionLabel>Substate diff</SectionLabel>
-          <Card className="px-5 py-4">
-            <JsonTree data={diff} />
+          <SectionLabel>
+            Substate diff ({(upSubstates?.length ?? 0) + (downSubstates?.length ?? 0)})
+          </SectionLabel>
+          <Card>
+            {upSubstates?.map(([id, value]) => (
+              <Disclosure
+                key={`up-${id}`}
+                className="border-b border-border-soft py-3 last:border-0"
+                summary={
+                  <>
+                    <Badge tone="reveal">created</Badge>
+                    <Hash value={id} />
+                  </>
+                }
+              >
+                <JsonTree data={value} />
+              </Disclosure>
+            ))}
+            {downSubstates?.map(([id, version]) => (
+              <div key={`down-${id}`} className="flex flex-wrap items-center gap-2 border-b border-border-soft px-5 py-3 last:border-0">
+                <Badge tone="veil">destroyed</Badge>
+                <Hash value={id} />
+                <span className="tabular text-xs text-ink-faint">v{version}</span>
+              </div>
+            ))}
           </Card>
         </div>
       )}
