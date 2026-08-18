@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { linkForId } from "../lib/links";
+import { componentAddressFromOtlAddress } from "../lib/ootleAddress";
 
 export function SearchBar({ className = "" }: { className?: string }) {
   const [value, setValue] = useState("");
@@ -11,7 +12,11 @@ export function SearchBar({ className = "" }: { className?: string }) {
     e.preventDefault();
     const trimmed = value.trim();
     if (!trimmed) return;
-    const target = linkForId(trimmed);
+    // An otl_... wallet address isn't itself a substate id -- it's the input a search box
+    // realistically sees, so it's resolved here (to the account it derives) rather than in
+    // linkForId, which every hash rendered anywhere in raw JSON also runs through.
+    const componentAddress = componentAddressFromOtlAddress(trimmed);
+    const target = linkForId(trimmed) ?? (componentAddress ? `/substate/${componentAddress}` : null);
     if (target) {
       setError(false);
       setValue("");
@@ -33,13 +38,13 @@ export function SearchBar({ className = "" }: { className?: string }) {
           setValue(e.target.value);
           setError(false);
         }}
-        placeholder="Search transaction id or substate address…"
+        placeholder="Search transaction id, substate, or otl_… wallet address…"
         spellCheck={false}
         className={`w-full rounded-lg border bg-surface py-2.5 pl-10 pr-4 font-mono text-sm text-ink placeholder:font-body placeholder:text-ink-faint outline-none transition-colors focus:border-accent-dim ${
           error ? "border-danger" : "border-border"
         }`}
       />
-      {error && <p className="absolute left-0 top-full mt-1.5 text-xs text-danger">Not a transaction id or substate address.</p>}
+      {error && <p className="absolute left-0 top-full mt-1.5 text-xs text-danger">Not a transaction id, substate address, or otl_… wallet address.</p>}
     </form>
   );
 }
