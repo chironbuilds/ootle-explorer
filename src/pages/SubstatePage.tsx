@@ -56,7 +56,13 @@ export default function SubstatePage() {
   const { id = "" } = useParams();
   const kind = substateKind(id);
 
-  const query = useQuery({ queryKey: ["substate", id], queryFn: () => getSubstate(id), enabled: !!id });
+  // A substate lookup that fails (404 for something never indexed, 500 for the indexer's known
+  // stealth-UTXO limitation) will fail identically on every retry -- the id doesn't change. Retrying
+  // anyway isn't just pointless: TanStack Query pauses a retry's backoff timer while the tab is
+  // backgrounded/unfocused (a real, documented behavior, not a bug), so a link opened in a background
+  // tab that happens to hit a failing id hangs indefinitely with zero visible feedback until the user
+  // actually clicks into that tab. No retry means no pause is ever possible.
+  const query = useQuery({ queryKey: ["substate", id], queryFn: () => getSubstate(id), enabled: !!id, retry: false });
 
   return (
     <div>
