@@ -54,7 +54,16 @@ export default function TransactionPage() {
   });
 
   if (txQuery.isLoading) return <LoadingBlock label="Loading transaction…" />;
-  if (txQuery.isError) return <ErrorBlock message={(txQuery.error as Error).message} />;
+  if (txQuery.isError)
+    return (
+      <div>
+        <ErrorBlock message={(txQuery.error as Error).message} />
+        <p className="mt-4 text-center text-xs text-ink-faint">
+          A 64-character hex value that isn't a known transaction could be something else instead -- a public key, commitment, or other hash.
+          There's no way to tell them apart by shape alone.
+        </p>
+      </div>
+    );
   if (!txQuery.data) return null;
 
   const tx = txQuery.data.transaction;
