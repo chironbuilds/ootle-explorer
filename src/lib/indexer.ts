@@ -190,7 +190,28 @@ export interface CachedTemplatesResponse {
 }
 
 export const listCachedTemplates = (limit = 50) => get<CachedTemplatesResponse>("/templates/cached", { limit });
-export const getTemplate = (address: string) => get<unknown>(`/templates/${encodeURIComponent(address)}`);
+
+// A template's function signature ("ABI"). `arg_type`/`output` are a recursive tagged shape:
+// a bare string for a builtin (`"U8"`, `"Unit"`, ...), `{Other:{name}}` for a named type,
+// `{Option:T}`/`{Vec:T}` wrapping another shape -- see `templateAbi.ts`'s `formatArgType`.
+export interface TemplateFunctionArg {
+  name: string;
+  arg_type: unknown;
+}
+
+export interface TemplateFunction {
+  name: string;
+  arguments: TemplateFunctionArg[];
+  output: unknown;
+  is_mut: boolean;
+}
+
+export interface TemplateDetailResponse {
+  name: string;
+  definition?: { V1?: { template_name: string; abi_version: number; functions: TemplateFunction[] } };
+}
+
+export const getTemplate = (address: string) => get<TemplateDetailResponse>(`/templates/${encodeURIComponent(address)}`);
 
 // ---- Transaction events ----
 

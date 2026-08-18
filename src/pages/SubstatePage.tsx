@@ -2,16 +2,28 @@ import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { getSubstate } from "../lib/indexer";
 import { substateKind } from "../lib/format";
-import { Badge, Card, ErrorBlock, LoadingBlock, PageHeader } from "../components/ui";
+import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader } from "../components/ui";
 import { Hash } from "../components/Hash";
 import { JsonTree } from "../components/JsonTree";
 import { VaultBalances } from "../components/VaultBalances";
 import { ResourceActivity } from "../components/ResourceActivity";
 
+interface ComponentSubstate {
+  header?: { template_address?: string; owner_rule?: { ByPublicKey?: string } };
+  body?: { state?: unknown };
+}
+
 /** Safely reaches into a component substate's raw CBOR state, or undefined for any other kind. */
 function readComponentState(data: unknown): unknown {
-  const substate = (data as { substate?: { Component?: { body?: { state?: unknown } } } } | undefined)?.substate;
+  const substate = (data as { substate?: { Component?: ComponentSubstate } } | undefined)?.substate;
   return substate?.Component?.body?.state;
+}
+
+/** The owner public key and originating template -- both live in the component's header, entirely
+ * separate from its CBOR state, so they're read independently rather than folded into VaultBalances. */
+function readComponentHeader(data: unknown): { ownerPublicKey?: string; templateAddress?: string } {
+  const header = (data as { substate?: { Component?: ComponentSubstate } } | undefined)?.substate?.Component?.header;
+  return { ownerPublicKey: header?.owner_rule?.ByPublicKey, templateAddress: header?.template_address };
 }
 
 interface ResourceInfo {
@@ -69,6 +81,24 @@ export default function SubstatePage() {
         ))}
       {query.data && (
         <>
+          {kind === "component" &&
+            (() => {
+              const { ownerPublicKey, templateAddress } = readComponentHeader(query.data);
+              return (ownerPublicKey || templateAddress) ? (
+                <Card className="mb-8">
+                  {ownerPublicKey && (
+                    <KeyValueRow label="Owner public key">
+                      <Hash value={ownerPublicKey} link={false} />
+                    </KeyValueRow>
+                  )}
+                  {templateAddress && (
+                    <KeyValueRow label="Template">
+                      <Hash value={templateAddress} linkOverride={`/template/${templateAddress}`} />
+                    </KeyValueRow>
+                  )}
+                </Card>
+              ) : null;
+            })()}
           {kind === "component" && <VaultBalances componentState={readComponentState(query.data)} />}
           {kind === "resource" &&
             (() => {

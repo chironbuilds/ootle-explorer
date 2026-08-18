@@ -7,6 +7,10 @@ const IDLIKE = /^(component|resource|vault|nft|utxo|template|txreceipt)_[0-9a-f_
 // content hash is exactly as hex-shaped as a transaction id, and far more common in this data. Only
 // treat one as a transaction id when its own JSON key says so, never from shape alone.
 const TX_REF_KEY = /^(transaction_id|transaction_hash|last_id|tx_id)$/i;
+// Template addresses are also bare 64-hex (no prefix), exactly as ambiguous as a transaction id by
+// shape alone -- only the key name (`template_address`, as seen on transaction events) tells them
+// apart, so this routes to the template page directly rather than through `linkForId`'s guess.
+const TEMPLATE_REF_KEY = /^template_address$/i;
 
 function isSubstateId(value: string): boolean {
   return IDLIKE.test(value);
@@ -18,6 +22,7 @@ function Primitive({ label, value }: { label?: string; value: string | number | 
   if (typeof value === "number") return <span className="tabular text-reveal">{value}</span>;
   if (typeof value === "string") {
     if (isSubstateId(value)) return <Hash value={value} />;
+    if (label && TEMPLATE_REF_KEY.test(label) && /^[0-9a-f]{64}$/i.test(value)) return <Hash value={value} linkOverride={`/template/${value}`} />;
     if (label && TX_REF_KEY.test(label) && linkForId(value) !== null) return <Hash value={value} />;
     if (/^\d+$/.test(value) && value.length > 4) return <span className="tabular text-reveal">"{value}"</span>;
     return <span className="text-ink">"{value}"</span>;

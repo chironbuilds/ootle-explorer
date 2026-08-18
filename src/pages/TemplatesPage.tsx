@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { Link } from "react-router-dom";
 import { listCachedTemplates } from "../lib/indexer";
 import { Card, ErrorBlock, LoadingBlock, PageHeader } from "../components/ui";
 import { Hash } from "../components/Hash";
@@ -41,15 +42,16 @@ export default function TemplatesPage() {
             <span>Epoch</span>
           </div>
           {visible.map((t) => (
-            <div
+            <Link
               key={t.address}
-              className="grid grid-cols-2 gap-2 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_90px_70px] sm:items-center sm:gap-3"
+              to={`/template/${t.address}`}
+              className="grid grid-cols-2 gap-2 border-b border-border-soft px-5 py-3.5 last:border-0 hover:bg-surface-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_90px_70px] sm:items-center sm:gap-3"
             >
               <span className="font-medium text-ink">{t.name}</span>
               <Hash value={t.address} link={false} />
               <span className="tabular text-xs text-ink-faint">{formatBytes(t.code_size)}</span>
               <span className="tabular text-xs text-ink-faint">{t.epoch}</span>
-            </div>
+            </Link>
           ))}
           <Pagination
             page={page + 1}

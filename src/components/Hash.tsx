@@ -8,11 +8,26 @@ function truncate(value: string, lead = 10, tail = 8): string {
 }
 
 /** A hash/address rendered in monospace, truncated by default with a copy button, and linked to
- * its detail page when the value's shape identifies one (substate id or 64-hex transaction id). */
-export function Hash({ value, full = false, link = true, className = "" }: { value: string; full?: boolean; link?: boolean; className?: string }) {
+ * its detail page when the value's shape identifies one (substate id or 64-hex transaction id).
+ * `linkOverride` bypasses that shape guess for bare 64-hex values whose surrounding context (a
+ * JSON key like `template_address`) already disambiguates them -- shape alone can't tell a
+ * template address from a transaction id, both being bare 64-hex. */
+export function Hash({
+  value,
+  full = false,
+  link = true,
+  linkOverride,
+  className = "",
+}: {
+  value: string;
+  full?: boolean;
+  link?: boolean;
+  linkOverride?: string;
+  className?: string;
+}) {
   const [copied, setCopied] = useState(false);
   const display = full ? value : truncate(value);
-  const target = link ? linkForId(value) : null;
+  const target = link ? (linkOverride ?? linkForId(value)) : null;
 
   const copy = async (e: React.MouseEvent) => {
     e.preventDefault();
