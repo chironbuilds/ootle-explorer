@@ -7,6 +7,7 @@ import { Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel }
 import { Hash } from "../components/Hash";
 import { StatusPill, VeilBadge } from "../components/StatusPill";
 import { JsonTree } from "../components/JsonTree";
+import { InstructionSummary } from "../components/InstructionSummary";
 
 /** Recursively finds the first array at a field named `key` -- the result envelope's exact
  * nesting (Finalized/Commit/Reject wrapping) varies more than is worth hand-modeling here. */
@@ -34,9 +35,17 @@ function InstructionList({ instructions, empty }: { instructions: unknown[]; emp
   return (
     <div className="divide-y divide-border-soft">
       {instructions.map((instr, i) => (
-        <div key={i} className="px-5 py-3.5">
-          <JsonTree data={instr} />
-        </div>
+        <details key={i} className="group px-5 py-3.5">
+          <summary className="flex cursor-pointer list-none items-center gap-2 [&::-webkit-details-marker]:hidden">
+            <svg width="9" height="9" viewBox="0 0 10 10" fill="none" className="shrink-0 text-ink-faint transition-transform group-open:rotate-90">
+              <path d="M3 1.5l4 3.5-4 3.5" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round" />
+            </svg>
+            <InstructionSummary instruction={instr} />
+          </summary>
+          <div className="mt-2 pl-4">
+            <JsonTree data={instr} />
+          </div>
+        </details>
       ))}
     </div>
   );
