@@ -5,6 +5,13 @@ import { substateKind } from "../lib/format";
 import { Badge, Card, ErrorBlock, LoadingBlock, PageHeader } from "../components/ui";
 import { Hash } from "../components/Hash";
 import { JsonTree } from "../components/JsonTree";
+import { VaultBalances } from "../components/VaultBalances";
+
+/** Safely reaches into a component substate's raw CBOR state, or undefined for any other kind. */
+function readComponentState(data: unknown): unknown {
+  const substate = (data as { substate?: { Component?: { body?: { state?: unknown } } } } | undefined)?.substate;
+  return substate?.Component?.body?.state;
+}
 
 const KIND_LABEL: Record<string, string> = {
   component: "Component",
@@ -44,9 +51,12 @@ export default function SubstatePage() {
           <ErrorBlock message={(query.error as Error).message} />
         ))}
       {query.data && (
-        <Card className="px-5 py-4">
-          <JsonTree data={query.data} />
-        </Card>
+        <>
+          {kind === "component" && <VaultBalances componentState={readComponentState(query.data)} />}
+          <Card className="px-5 py-4">
+            <JsonTree data={query.data} />
+          </Card>
+        </>
       )}
     </div>
   );

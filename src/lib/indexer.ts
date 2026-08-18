@@ -137,6 +137,23 @@ export interface SubstateResponse {
 export const getSubstate = (id: string, version?: number) =>
   get<SubstateResponse>(`/substates/${encodeURIComponent(id)}`, version !== undefined ? { version } : undefined);
 
+// A vault's held value is one of four shapes (`ResourceContainer` in tari-ootle's
+// `crates/engine_types/src/resource_container.rs`). Only `Fungible.amount` is a complete, exact
+// balance; `Confidential`/`Stealth` publish `revealed_amount` only -- the vault may hold additional
+// value hidden in commitments that no explorer can see. `NonFungible` holds token ids, not an amount.
+export type ResourceContainer =
+  | { Fungible: { address: string; amount: string; locked_amount: string } }
+  | { NonFungible: { address: string; token_ids: unknown[]; locked_token_ids: unknown[] } }
+  | { Confidential: { address: string; revealed_amount: string; locked_revealed_amount: string } }
+  | { Stealth: { address: string; revealed_amount: string; locked_amount: string } };
+
+export interface VaultSubstateResponse {
+  version: number;
+  substate: { Vault: { resource_container: ResourceContainer; freeze_flags: number } };
+}
+
+export const getVault = (id: string) => get<VaultSubstateResponse>(`/substates/${encodeURIComponent(id)}`);
+
 // ---- Resources ----
 
 export interface ResourceResponse {

@@ -17,6 +17,24 @@ export function formatMicroTari(raw: string | number): string {
   return `${negative ? "-" : ""}${whole.toLocaleString("en-US")}${fracStr}`;
 }
 
+/** Formats a raw integer amount using a resource's own `divisibility` (decimal places), the
+ * general form of `formatMicroTari` (which is just this at divisibility 6, TARI's own). */
+export function formatAmount(raw: string | number, divisibility: number): string {
+  const scale = 10n ** BigInt(divisibility);
+  let n: bigint;
+  try {
+    n = BigInt(typeof raw === "number" ? Math.trunc(raw) : raw);
+  } catch {
+    return String(raw);
+  }
+  const negative = n < 0n;
+  if (negative) n = -n;
+  const whole = n / scale;
+  const frac = n % scale;
+  const fracStr = divisibility === 0 || frac === 0n ? "" : "." + frac.toString().padStart(divisibility, "0").replace(/0+$/, "");
+  return `${negative ? "-" : ""}${whole.toLocaleString("en-US")}${fracStr}`;
+}
+
 export function formatNumber(n: number | string): string {
   const v = typeof n === "string" ? Number(n) : n;
   if (!Number.isFinite(v)) return String(n);
