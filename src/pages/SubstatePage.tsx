@@ -6,11 +6,28 @@ import { Badge, Card, ErrorBlock, LoadingBlock, PageHeader } from "../components
 import { Hash } from "../components/Hash";
 import { JsonTree } from "../components/JsonTree";
 import { VaultBalances } from "../components/VaultBalances";
+import { ResourceActivity } from "../components/ResourceActivity";
 
 /** Safely reaches into a component substate's raw CBOR state, or undefined for any other kind. */
 function readComponentState(data: unknown): unknown {
   const substate = (data as { substate?: { Component?: { body?: { state?: unknown } } } } | undefined)?.substate;
   return substate?.Component?.body?.state;
+}
+
+interface ResourceInfo {
+  resourceType: string;
+  divisibility: number;
+  symbol?: string;
+}
+
+function readResourceInfo(data: unknown): ResourceInfo | null {
+  const resource = (
+    data as
+      | { substate?: { Resource?: { resource_type?: string; divisibility?: number; metadata?: Record<string, string> } } }
+      | undefined
+  )?.substate?.Resource;
+  if (!resource?.resource_type) return null;
+  return { resourceType: resource.resource_type, divisibility: resource.divisibility ?? 0, symbol: resource.metadata?.SYMBOL };
 }
 
 const KIND_LABEL: Record<string, string> = {
@@ -53,6 +70,18 @@ export default function SubstatePage() {
       {query.data && (
         <>
           {kind === "component" && <VaultBalances componentState={readComponentState(query.data)} />}
+          {kind === "resource" &&
+            (() => {
+              const info = readResourceInfo(query.data);
+              return info ? (
+                <ResourceActivity
+                  resourceAddress={id}
+                  divisibility={info.divisibility}
+                  symbol={info.symbol}
+                  isConfidential={info.resourceType === "Stealth" || info.resourceType === "Confidential"}
+                />
+              ) : null;
+            })()}
           <Card className="px-5 py-4">
             <JsonTree data={query.data} />
           </Card>
