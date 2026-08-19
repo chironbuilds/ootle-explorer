@@ -81,12 +81,24 @@ export function ErrorBlock({ message }: { message: string }) {
   );
 }
 
-export function Badge({ children, tone = "neutral" }: { children: ReactNode; tone?: "neutral" | "accent" | "reveal" | "veil" }) {
+export function Badge({
+  children,
+  tone = "neutral",
+  title,
+}: {
+  children: ReactNode;
+  tone?: "neutral" | "accent" | "reveal" | "veil";
+  title?: string;
+}) {
   const tones = {
     neutral: "bg-surface-2 text-ink-dim",
     accent: "bg-accent/10 text-accent",
     reveal: "bg-reveal/10 text-reveal",
     veil: "bg-veil/10 text-veil",
   } as const;
-  return <span className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${tones[tone]}`}>{children}</span>;
+  return (
+    <span title={title} className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-medium ${tones[tone]}`}>
+      {children}
+    </span>
+  );
 }

@@ -9,6 +9,7 @@ import { StatusPill, VeilBadge } from "../components/StatusPill";
 import { JsonTree } from "../components/JsonTree";
 import { InstructionSummary } from "../components/InstructionSummary";
 import { Disclosure } from "../components/Disclosure";
+import { describeSpendAuthorization, formatUtxoTag } from "../lib/utxo";
 
 /** Recursively finds the first array at a field named `key` -- the result envelope's exact
  * nesting (Finalized/Commit/Reject wrapping) varies more than is worth hand-modeling here. */
@@ -45,23 +46,31 @@ function InstructionList({ instructions, empty }: { instructions: unknown[]; emp
 }
 
 /** A created (`up_substates`) UTXO's value, per `SubstateId::Utxo` -- `output.output` carries the
- * confidential commitment itself (only `minimum_value_promise` is ever cleartext; 0 means fully
- * hidden), `output.auth.Key` is the spending authority. */
+ * confidential commitment itself (only `minimum_value_promise` is ever cleartext, and it's a
+ * disclosed *floor*, not the real amount; 0 means nothing at all is disclosed). `output.auth` is
+ * one of Key/Script/KeyAndScript (see `lib/utxo.ts`), `output.tag` a public scan hint, and
+ * `is_frozen` whether this specific output can currently be spent at all. */
 interface UtxoUpValue {
   substate?: {
     Utxo?: {
       output?: {
         output?: { minimum_value_promise?: number };
-        auth?: { Key?: string };
+        auth?: unknown;
+        tag?: number;
       };
       is_frozen?: boolean;
     };
   };
 }
 
-function readUtxoUp(value: unknown): { minValuePromise: number; authKey?: string } {
+function readUtxoUp(value: unknown) {
   const utxo = (value as UtxoUpValue | undefined)?.substate?.Utxo;
-  return { minValuePromise: utxo?.output?.output?.minimum_value_promise ?? 0, authKey: utxo?.output?.auth?.Key };
+  return {
+    minValuePromise: utxo?.output?.output?.minimum_value_promise ?? 0,
+    auth: describeSpendAuthorization(utxo?.output?.auth),
+    tag: utxo?.output?.tag,
+    isFrozen: utxo?.is_frozen ?? false,
+  };
 }
 
 function UtxoSection({ upSubstates, downSubstates }: { upSubstates: [string, unknown][]; downSubstates: [string, number][] }) {
@@ -74,20 +83,38 @@ function UtxoSection({ upSubstates, downSubstates }: { upSubstates: [string, unk
       <SectionLabel>UTXOs ({created.length + spent.length})</SectionLabel>
       <Card>
         {created.map(([id, value]) => {
-          const { minValuePromise, authKey } = readUtxoUp(value);
+          const { minValuePromise, auth, tag, isFrozen } = readUtxoUp(value);
           return (
             <div key={id} className="flex flex-wrap items-center gap-2 border-b border-border-soft px-5 py-3.5 last:border-0">
               <Badge tone="reveal">created</Badge>
               <Hash value={id} />
-              <VeilBadge veiled={minValuePromise === 0} />
-              {minValuePromise > 0 && (
-                <span className="tabular text-xs text-ink-faint">min value {formatMicroTari(minValuePromise)} tTARI</span>
+              {minValuePromise > 0 ? (
+                <span className="tabular text-xs text-ink-dim">Minimum disclosed: ≥ {formatMicroTari(minValuePromise)} tTARI</span>
+              ) : (
+                <Badge tone="veil">Fully veiled</Badge>
               )}
-              {authKey && (
+              {auth?.kind === "Key" && (
                 <span className="flex items-center gap-1.5 text-xs text-ink-faint">
-                  spendable by <Hash value={authKey} link={false} className="text-xs" />
+                  Key-path · <Hash value={auth.key} link={false} className="text-xs" />
                 </span>
               )}
+              {auth?.kind === "Script" && (
+                <span className="flex items-center gap-1.5 text-xs text-ink-faint">
+                  Script-path · condition root <Hash value={auth.conditionRoot} link={false} className="text-xs" />
+                </span>
+              )}
+              {auth?.kind === "KeyAndScript" && (
+                <span className="flex flex-wrap items-center gap-1.5 text-xs text-ink-faint">
+                  Key or Script-path · <Hash value={auth.key} link={false} className="text-xs" /> · condition root{" "}
+                  <Hash value={auth.conditionRoot} link={false} className="text-xs" />
+                </span>
+              )}
+              {tag !== undefined && (
+                <span className="font-mono text-xs text-ink-faint" title="Public scan tag">
+                  {formatUtxoTag(tag)}
+                </span>
+              )}
+              {isFrozen && <Badge tone="veil">Frozen</Badge>}
             </div>
           );
         })}

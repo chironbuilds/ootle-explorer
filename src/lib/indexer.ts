@@ -131,6 +131,13 @@ export interface SubstateResponse {
   substate?: unknown;
   address?: unknown;
   version?: number;
+  // True only when this value was checked against the committee before being accepted -- false for
+  // local-only lookups, when verification is disabled, or when no committee member could supply a
+  // proof yet (e.g. nothing committed since an epoch change). See the indexer's own
+  // `/substates/{id}` handler doc comment (rest_api/handlers/substates.rs) for this exact wording --
+  // it does NOT mean "freshly re-proven for this request": Ootle can satisfy the check from a
+  // previously-trusted committee state root rather than re-running a fresh proof every time.
+  verified?: boolean;
   [key: string]: unknown;
 }
 

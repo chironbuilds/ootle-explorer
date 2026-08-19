@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Hash } from "./Hash";
 import { linkForId } from "../lib/links";
 
-const IDLIKE = /^(component|resource|vault|nft|utxo|template|txreceipt)_[0-9a-f_]+$/i;
+const IDLIKE = /^(component|resource|vault|nft|utxo|coutput|template|txreceipt)_[0-9a-f_]+$/i;
 // Bare (unprefixed) 64-hex values are ambiguous -- a public key, mask, commitment, signature, or
 // content hash is exactly as hex-shaped as a transaction id, and far more common in this data. Only
 // treat one as a transaction id when its own JSON key says so, never from shape alone.

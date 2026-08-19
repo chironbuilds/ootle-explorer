@@ -8,6 +8,7 @@ import { JsonTree } from "../components/JsonTree";
 import { VaultBalances } from "../components/VaultBalances";
 import { ResourceActivity } from "../components/ResourceActivity";
 import { ComponentActivity } from "../components/ComponentActivity";
+import { UtxoDetail } from "../components/UtxoDetail";
 
 interface ComponentSubstate {
   header?: { template_address?: string; owner_rule?: { ByPublicKey?: string } };
@@ -50,7 +51,12 @@ const KIND_LABEL: Record<string, string> = {
   nft: "Non-fungible token",
   template: "Template",
   utxo: "Stealth UTXO",
+  coutput: "Confidential output",
 };
+
+const VERIFIED_TITLE = "Checked against the committee before being accepted as current -- Ootle can satisfy this from a previously-trusted committee state root rather than re-running a fresh proof for every request.";
+const UNVERIFIED_TITLE =
+  "Not checked against the committee for this request -- verification may be disabled on this indexer, no committee member could supply a proof yet (e.g. nothing committed since an epoch change), or this was a local-only lookup.";
 
 export default function SubstatePage() {
   const { id = "" } = useParams();
@@ -73,22 +79,33 @@ export default function SubstatePage() {
           </span>
         }
         sub="Substate"
-        actions={<Badge tone="accent">{KIND_LABEL[kind] ?? kind}</Badge>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge tone="accent">{KIND_LABEL[kind] ?? kind}</Badge>
+            {query.data && (
+              <Badge tone={query.data.verified ? "reveal" : "neutral"} title={query.data.verified ? VERIFIED_TITLE : UNVERIFIED_TITLE}>
+                {query.data.verified ? "Committee-verified" : "Unverified"}
+              </Badge>
+            )}
+          </div>
+        }
       />
 
       {query.isLoading && <LoadingBlock label="Loading substate…" />}
       {query.isError &&
-        (kind === "utxo" ? (
+        (kind === "utxo" || kind === "coutput" ? (
           <Card className="px-5 py-8 text-center text-sm text-ink-dim">
-            This UTXO has most likely already been spent. The indexer only tracks current, unspent state — once a stealth UTXO is consumed, a
-            direct lookup like this one fails on its end (a bug in how it reports "gone", not something specific to this one) — but it's still
-            visible in full on the transaction that spent it, and on the transaction that created it if that one's still cached.
+            This {kind === "utxo" ? "UTXO" : "confidential output"} has most likely already been spent. The indexer only tracks current, unspent
+            state — once one is consumed, a direct lookup like this one fails on its end (a bug in how it reports "gone", not something specific
+            to this one) — but it's still visible in full on the transaction that spent it, and on the transaction that created it if that one's
+            still cached.
           </Card>
         ) : (
           <ErrorBlock message={(query.error as Error).message} />
         ))}
       {query.data && (
         <>
+          {(kind === "utxo" || kind === "coutput") && <UtxoDetail id={id} data={query.data} kind={kind} />}
           {kind === "component" &&
             (() => {
               const { ownerPublicKey, templateAddress } = readComponentHeader(query.data);
