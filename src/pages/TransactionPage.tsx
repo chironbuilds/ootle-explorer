@@ -9,6 +9,7 @@ import { StatusPill, VeilBadge } from "../components/StatusPill";
 import { JsonTree } from "../components/JsonTree";
 import { InstructionSummary } from "../components/InstructionSummary";
 import { Disclosure } from "../components/Disclosure";
+import { StealthTransferDetail } from "../components/StealthTransferDetail";
 import { describeSpendAuthorization, formatUtxoTag } from "../lib/utxo";
 
 /** Recursively finds the first array at a field named `key` -- the result envelope's exact
@@ -36,11 +37,18 @@ function InstructionList({ instructions, empty }: { instructions: unknown[]; emp
   if (instructions.length === 0) return <p className="px-5 py-4 text-sm text-ink-faint">{empty}</p>;
   return (
     <div className="divide-y divide-border-soft">
-      {instructions.map((instr, i) => (
-        <Disclosure key={i} summary={<InstructionSummary instruction={instr} />}>
-          <JsonTree data={instr} />
-        </Disclosure>
-      ))}
+      {instructions.map((instr, i) => {
+        const statement =
+          instr && typeof instr === "object" && "StealthTransfer" in instr
+            ? (instr as { StealthTransfer: { statement?: unknown } }).StealthTransfer.statement
+            : undefined;
+        return (
+          <Disclosure key={i} summary={<InstructionSummary instruction={instr} />}>
+            {statement !== undefined && <StealthTransferDetail statement={statement} />}
+            <JsonTree data={instr} />
+          </Disclosure>
+        );
+      })}
     </div>
   );
 }
