@@ -28,3 +28,13 @@ export function nftSubstateId(resourceAddress: string, id: unknown): string | nu
   const hex = resourceAddress.replace(/^resource_/, "");
   return `nft_${hex}_${canonical}`;
 }
+
+/** The reverse of `nftSubstateId` -- splits `nft_<resource_hex>_<canonical_id>` back into its
+ * resource and token id. The resource hex is always a fixed 64 characters (`NonFungibleAddress::
+ * from_str` parses it as a whole `ResourceAddress`), so it's sliced off first rather than split on
+ * `_` generically -- a `str_` token id can itself contain underscores. */
+export function parseNftSubstateId(id: string): { resourceAddress: string; tokenId: string } | null {
+  const match = id.match(/^nft_([0-9a-f]{64})_(.+)$/i);
+  if (!match) return null;
+  return { resourceAddress: `resource_${match[1]}`, tokenId: match[2]! };
+}

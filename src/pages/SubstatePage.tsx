@@ -9,6 +9,7 @@ import { VaultBalances } from "../components/VaultBalances";
 import { ResourceActivity } from "../components/ResourceActivity";
 import { ComponentActivity } from "../components/ComponentActivity";
 import { UtxoDetail } from "../components/UtxoDetail";
+import { NftDetail } from "../components/NftDetail";
 
 interface ComponentSubstate {
   header?: { template_address?: string; owner_rule?: { ByPublicKey?: string } };
@@ -106,6 +107,7 @@ export default function SubstatePage() {
       {query.data && (
         <>
           {(kind === "utxo" || kind === "coutput") && <UtxoDetail id={id} data={query.data} kind={kind} />}
+          {kind === "nft" && <NftDetail id={id} data={query.data} />}
           {kind === "component" &&
             (() => {
               const { ownerPublicKey, templateAddress } = readComponentHeader(query.data);
