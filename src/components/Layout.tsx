@@ -1,8 +1,9 @@
-import { NavLink, Outlet } from "react-router-dom";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getIdentity, getNetworkInfo } from "../lib/indexer";
 import { SearchBar } from "./SearchBar";
 import { Hash } from "./Hash";
+import { ErrorBoundary } from "./ErrorBoundary";
 
 function Logo() {
   return (
@@ -56,6 +57,8 @@ function NodeIdentity() {
 }
 
 export function Layout() {
+  const location = useLocation();
+
   return (
     <div className="min-h-screen bg-ground">
       <header className="sticky top-0 z-20 border-b border-border-soft bg-ground/85 backdrop-blur">
@@ -103,7 +106,9 @@ export function Layout() {
       </header>
 
       <main className="mx-auto max-w-6xl px-5 py-8">
-        <Outlet />
+        <ErrorBoundary key={location.pathname}>
+          <Outlet />
+        </ErrorBoundary>
       </main>
 
       <footer className="mx-auto max-w-6xl px-5 py-10 text-xs text-ink-faint">
