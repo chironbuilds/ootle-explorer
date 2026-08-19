@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { getTransaction, getTransactionResult } from "../lib/indexer";
+import { getTransaction, getTransactionReceipt, getTransactionResult } from "../lib/indexer";
 import { readTxBody, isStealthTransaction } from "../lib/txShape";
 import { formatAbsoluteTime, formatMicroTari, formatRelativeTime } from "../lib/format";
 import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel } from "../components/ui";
@@ -148,6 +148,16 @@ export default function TransactionPage() {
     enabled: !!id,
     retry: false,
   });
+  // The live result cache expires; a transaction's own receipt substate doesn't. Only tried once
+  // the result lookup has actually failed, and only for its events -- a receipt's diff summary
+  // carries no destroyed-substate list and only hashes (not full values) for created ones, so it
+  // can't recover the UTXOs or substate-diff sections, only what actually happened on-chain.
+  const receiptQuery = useQuery({
+    queryKey: ["tx-receipt", id],
+    queryFn: () => getTransactionReceipt(id),
+    enabled: !!id && resultQuery.isError,
+    retry: false,
+  });
 
   if (txQuery.isLoading) return <LoadingBlock label="Loading transaction…" />;
   if (txQuery.isError)
@@ -165,7 +175,10 @@ export default function TransactionPage() {
   const tx = txQuery.data.transaction;
   const body = readTxBody(tx.transaction);
   const stealth = isStealthTransaction(body);
-  const events = resultQuery.data ? (findArrayField(resultQuery.data, "events") as TxEvent[] | null) : null;
+  const events = resultQuery.data
+    ? (findArrayField(resultQuery.data, "events") as TxEvent[] | null)
+    : (receiptQuery.data?.receipt.events ?? null);
+  const eventsFromReceipt = !resultQuery.data && !!receiptQuery.data;
   const upSubstates = resultQuery.data ? (findArrayField(resultQuery.data, "up_substates") as [string, unknown][] | null) : null;
   const downSubstates = resultQuery.data ? (findArrayField(resultQuery.data, "down_substates") as [string, number][] | null) : null;
 
@@ -250,12 +263,19 @@ export default function TransactionPage() {
       <div className="mb-8">
         <SectionLabel>Events{events ? ` (${events.length})` : ""}</SectionLabel>
         {resultQuery.isLoading && <LoadingBlock label="Loading result…" />}
-        {resultQuery.isError && (
+        {resultQuery.isError && receiptQuery.isLoading && <LoadingBlock label="Live result expired — recovering from the transaction's receipt…" />}
+        {resultQuery.isError && receiptQuery.isError && (
           <Card className="px-5 py-6 text-sm text-ink-dim">
             {tx.summary?.outcome && tx.summary.outcome !== "Pending"
-              ? "This transaction has finalized, but this indexer doesn't have detailed event data cached for it anymore."
+              ? "This transaction has finalized, but neither the live result nor its receipt are available on this indexer anymore."
               : "Result not yet available — the transaction may still be pending."}
           </Card>
+        )}
+        {eventsFromReceipt && events && events.length > 0 && (
+          <p className="mb-2 text-xs text-ink-faint">
+            Recovered from the transaction's own receipt (its live result has expired on this indexer) — the substate diff below isn't available
+            this way, only what actually happened.
+          </p>
         )}
         {events && events.length > 0 && (
           <Card>

@@ -233,6 +233,24 @@ export interface QueryTransactionEventsResponse {
   events: Array<[string, TransactionEvent]>;
 }
 
+// ---- Transaction receipts ----
+
+// A transaction's own `txreceipt_<id>` substate -- unlike `/transactions/{id}/result`, which the
+// indexer only caches for a limited time, a receipt is a permanent on-chain substate, so it's a
+// reliable events fallback once the live result cache has expired. `diff_summary.upped` only
+// gives created substates as `{substate_id, version, value_hash}` (a hash, not the full value) and
+// carries no destroyed-substate list at all -- see `TransactionReceipt`/`DiffSummary` in
+// tari-ootle's engine_types crate -- so this can recover events fully but not a full substate diff.
+export interface TransactionReceiptResponse {
+  receipt: {
+    outcome: string;
+    diff_summary: { upped: { substate_id: string; version: number; value_hash: string }[] };
+    events: TransactionEvent[];
+  };
+}
+
+export const getTransactionReceipt = (id: string) => get<TransactionReceiptResponse>(`/transaction-receipts/${encodeURIComponent(id)}`);
+
 /** `resource_address` matches an event either by substate id (std.resource.* events, e.g. mint/burn,
  * where the resource itself is the event's subject) or by a `resource_address` field in the payload
  * (std.vault.deposit/withdraw, where a vault moved that resource) -- see the indexer's own
