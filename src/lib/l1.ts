@@ -19,6 +19,12 @@ export interface L1SupplyResponse {
     emissionDecay: string[];
     inflationBips: string;
     preMineValue: string;
+    tailEpochLength: string;
+  };
+  emission: {
+    currentBlockReward: string;
+    inTailEmission: boolean;
+    tailEmissionHeight: string | null;
   };
   recentBlockTime: { avgSeconds: number | null; sampleBlocks: number; fromHeight: string | null; toHeight: string | null };
   powAlgoMix: Record<string, number>;

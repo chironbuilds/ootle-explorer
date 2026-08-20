@@ -81,6 +81,28 @@ export function ErrorBlock({ message }: { message: string }) {
   );
 }
 
+export function ProgressBar({
+  fraction,
+  label,
+  accent = "accent",
+}: {
+  /** 0-1. Values outside that range are clamped, so a caller doesn't need to pre-guard rounding. */
+  fraction: number;
+  label?: ReactNode;
+  accent?: "accent" | "reveal" | "veil";
+}) {
+  const pct = Math.max(0, Math.min(1, fraction)) * 100;
+  const colors = { accent: "bg-accent", reveal: "bg-reveal", veil: "bg-veil" } as const;
+  return (
+    <div className="min-w-0">
+      {label && <div className="mb-1.5 flex items-center justify-between text-xs text-ink-dim">{label}</div>}
+      <div className="h-2 w-full overflow-hidden rounded-full bg-surface-2">
+        <div className={`h-full rounded-full ${colors[accent]}`} style={{ width: `${pct}%` }} />
+      </div>
+    </div>
+  );
+}
+
 export function Badge({
   children,
   tone = "neutral",

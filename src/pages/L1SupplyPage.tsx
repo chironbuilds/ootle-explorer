@@ -2,7 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getL1Supply } from "../lib/l1";
 import { formatNumber } from "../lib/format";
 import { unlockTimeline, type UnlockTimelineEntry } from "../lib/preMineSchedule";
-import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel, StatTile } from "../components/ui";
+import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, ProgressBar, SectionLabel, StatTile } from "../components/ui";
 
 const TOTAL_SUPPLY_CAP_XTM = 21_000_000_000n;
 const POW_ALGO_LABEL: Record<string, string> = {
@@ -35,7 +35,8 @@ function formatEta(blocksAway: number, avgBlockSeconds: number | null): string {
   const days = seconds / 86_400;
   if (days < 1) return `~${Math.round(seconds / 3600)}h`;
   if (days < 60) return `~${Math.round(days)}d`;
-  return `~${(days / 30.44).toFixed(1)}mo`;
+  if (days < 365) return `~${(days / 30.44).toFixed(1)}mo`;
+  return `~${(days / 365.25).toFixed(1)}y`;
 }
 
 function UnlockRow({ entry, currentHeight, avgBlockSeconds }: { entry: UnlockTimelineEntry; currentHeight: number; avgBlockSeconds: number | null }) {
@@ -129,6 +130,33 @@ export default function L1SupplyPage() {
             />
           </div>
 
+          <Card className="mb-8 space-y-4 px-5 py-4">
+            <ProgressBar
+              accent="reveal"
+              label={
+                <>
+                  <span>Total supply minted</span>
+                  <span className="tabular">
+                    {totalEverMinted !== null ? ((Number(totalEverMinted) / 1e6 / Number(TOTAL_SUPPLY_CAP_XTM)) * 100).toFixed(1) : "—"}%
+                  </span>
+                </>
+              }
+              fraction={totalEverMinted !== null ? Number(totalEverMinted) / 1e6 / Number(TOTAL_SUPPLY_CAP_XTM) : 0}
+            />
+            <ProgressBar
+              accent="veil"
+              label={
+                <>
+                  <span>Pre-mine spendable (live)</span>
+                  <span className="tabular">
+                    {((Number(supply.spendablePreMine) / Number(supply.totalPreMine)) * 100).toFixed(1)}%
+                  </span>
+                </>
+              }
+              fraction={Number(supply.spendablePreMine) / Number(supply.totalPreMine)}
+            />
+          </Card>
+
           <SectionLabel>Supply breakdown</SectionLabel>
           <Card className="mb-8">
             <KeyValueRow label="Pre-mine total">
@@ -158,6 +186,32 @@ export default function L1SupplyPage() {
               >
                 {supply.spendableRewards && `${formatNumber(query.data.constants.coinbaseMinMaturity)}-block coinbase maturity window`}
               </span>
+            </KeyValueRow>
+            <KeyValueRow label="Current block reward">
+              <span className="tabular text-ink">{xtm(query.data.emission.currentBlockReward)} XTM</span>
+              <span
+                className="ml-2 text-xs text-ink-faint"
+                title="Computed from the protocol's own emission-decay formula (verified against this node's own reported mined_rewards before shipping), not fetched directly -- the base node's gRPC API has no single call for 'reward at this height'."
+              >
+                pure emission, excludes fees
+              </span>
+            </KeyValueRow>
+            <KeyValueRow label="Tail emission">
+              {query.data.emission.inTailEmission ? (
+                <Badge tone="reveal">reached — reward now inflation-based</Badge>
+              ) : query.data.emission.tailEmissionHeight ? (
+                <span className="text-ink">
+                  <Badge tone="veil">
+                    {formatEta(Number(query.data.emission.tailEmissionHeight) - currentHeight, avgBlockSeconds)}
+                  </Badge>
+                  <span className="ml-2 text-xs text-ink-faint">
+                    at height {formatNumber(query.data.emission.tailEmissionHeight)}, decay gives way to a fixed{" "}
+                    {Number(query.data.constants.inflationBips) / 100}%/yr issuance
+                  </span>
+                </span>
+              ) : (
+                <span className="text-ink-faint">—</span>
+              )}
             </KeyValueRow>
             {Object.keys(query.data.powAlgoMix).length > 0 && (
               <KeyValueRow label="Mining, recent mix">

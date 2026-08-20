@@ -9,6 +9,7 @@
 import path from "node:path";
 import * as grpc from "@grpc/grpc-js";
 import * as protoLoader from "@grpc/proto-loader";
+import { emissionAtHeight, heightAtTailEmission, type EmissionParams } from "../src/lib/emission.js";
 
 const PROTO_PATH = path.join(process.cwd(), "api/proto/base_node.proto");
 const NODE_ADDRESS = "grpc.tari.com:443";
@@ -72,6 +73,7 @@ interface ConsensusConstants {
   emission_decay: string[];
   inflation_bips: string;
   pre_mine_value: string;
+  tail_epoch_length: string;
 }
 interface BlockHeaderResponse {
   header: { height: string; timestamp: string; pow?: { pow_algo?: string } };
@@ -117,6 +119,21 @@ export default async function handler(req: { method?: string }, res: {
       powAlgoMix[algo] = (powAlgoMix[algo] ?? 0) + 1;
     }
 
+    // Verified byte-for-byte against live GetTokensInCirculation output before this was wired in
+    // (emissionAtHeight's cumulative supply-since-pre-mine matched mined_rewards exactly, diff 0
+    // uT, at a real mainnet height) -- see this function's own doc comment / emission.ts.
+    const emissionParams: EmissionParams = {
+      initialMicroXtm: BigInt(constants.emission_initial),
+      decay: constants.emission_decay.map(Number),
+      inflationBips: BigInt(constants.inflation_bips),
+      tailEpochLength: BigInt(constants.tail_epoch_length),
+      initialSupplyMicroXtm: BigInt(constants.pre_mine_value),
+    };
+    const currentEmission = emissionAtHeight(emissionParams, BigInt(tipHeight));
+    const tailEmissionHeight = currentEmission.inTailEmission
+      ? null
+      : heightAtTailEmission(emissionParams, 10_000_000n);
+
     res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
     res.status(200).json({
       tip: { height: tipHeight, timestamp: tip.metadata.timestamp },
@@ -135,6 +152,12 @@ export default async function handler(req: { method?: string }, res: {
         emissionDecay: constants.emission_decay,
         inflationBips: constants.inflation_bips,
         preMineValue: constants.pre_mine_value,
+        tailEpochLength: constants.tail_epoch_length,
+      },
+      emission: {
+        currentBlockReward: currentEmission.rewardMicroXtm.toString(),
+        inTailEmission: currentEmission.inTailEmission,
+        tailEmissionHeight: tailEmissionHeight?.toString() ?? null,
       },
       recentBlockTime: {
         avgSeconds: avgBlockTimeSeconds,
