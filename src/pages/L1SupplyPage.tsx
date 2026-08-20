@@ -168,7 +168,7 @@ export default function L1SupplyPage() {
           <Card className="mb-8">
             <KeyValueRow label="Pre-mine total">
               <span className="tabular">{xtm(supply.totalPreMine)} XTM</span>
-              <span className="ml-2 text-xs text-ink-faint">30% of the 21B max supply, per published tokenomics</span>
+              <span className="ml-2 text-xs text-ink-faint">30% of the ~21B design target, per published tokenomics</span>
             </KeyValueRow>
             <KeyValueRow label="— spendable now">
               <span className="tabular text-ink">{xtm(supply.spendablePreMine)} XTM</span>
@@ -178,7 +178,7 @@ export default function L1SupplyPage() {
             </KeyValueRow>
             <KeyValueRow label="Mined (coinbase emission)">
               <span className="tabular">{xtm(supply.minedRewards)} XTM</span>
-              <span className="ml-2 text-xs text-ink-faint">70% of max supply is released this way, over time</span>
+              <span className="ml-2 text-xs text-ink-faint">70% of the design target is released this way, over time</span>
             </KeyValueRow>
             <KeyValueRow label="— spendable now">
               <span className="tabular text-ink">{xtm(supply.spendableRewards)} XTM</span>
