@@ -18,6 +18,7 @@ const NAV = [
   { to: "/", label: "Overview", end: true },
   { to: "/templates", label: "Templates" },
   { to: "/validators", label: "Validators" },
+  { to: "/l1-supply", label: "L1 Supply" },
 ];
 
 function NetworkPill() {
