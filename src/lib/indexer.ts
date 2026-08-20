@@ -66,6 +66,37 @@ export const getNetworkInfo = () => get<NetworkInfo>("/network");
 export const getNetworkEconomics = () => get<NetworkEconomics>("/network/economics");
 export const getIdentity = () => get<IdentityInfo>("/identity");
 
+// ---- Epoch checkpoints ----
+
+// The response also carries a `shard_tree_summary` -- a root hash + state version per shard
+// (256 of them for this network) -- which isn't modeled here since nothing renders it; only the
+// checkpoint header and the quorum certificates that committed it are narrowly typed below.
+export interface QuorumCertificate {
+  decision: string;
+  signatures: { public_key: string }[];
+}
+
+export interface EpochCheckpointResponse {
+  checkpoint: {
+    proof: {
+      V1: {
+        commit_proof: {
+          header: {
+            epoch: number;
+            height: number;
+            state_merkle_root: string;
+            proposed_by: string;
+            shard_group: { start: number; end_inclusive: number };
+          };
+          proof_elements: { QuorumCertificate: QuorumCertificate }[];
+        };
+      };
+    };
+  };
+}
+
+export const getLatestEpochCheckpoint = () => get<EpochCheckpointResponse>("/epoch-checkpoints/latest");
+
 // ---- Validators ----
 
 export interface Validator {

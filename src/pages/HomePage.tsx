@@ -8,6 +8,7 @@ import { Card, ErrorBlock, LoadingBlock, StatTile } from "../components/ui";
 import { Hash } from "../components/Hash";
 import { StatusPill, VeilBadge } from "../components/StatusPill";
 import { Pagination } from "../components/Pagination";
+import { LatestCheckpoint } from "../components/LatestCheckpoint";
 
 const PAGE_SIZE = 20;
 
@@ -92,6 +93,8 @@ export default function HomePage() {
           accent="accent"
         />
       </div>
+
+      <LatestCheckpoint />
 
       <div className="mb-3 flex items-center justify-between">
         <h2 className="font-display text-sm font-semibold uppercase tracking-wide text-ink-dim">Recent transactions</h2>
