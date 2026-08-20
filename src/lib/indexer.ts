@@ -326,6 +326,11 @@ export interface TransactionReceiptResponse {
     outcome: string;
     diff_summary: { upped: { substate_id: string; version: number; value_hash: string }[] };
     events: TransactionEvent[];
+    // Commits to every field the signers authorized (network, instructions, inputs, epoch bounds,
+    // flags, blob commitments) excluding the signatures themselves -- lets anyone holding the
+    // transaction link it to this receipt without the link revealing who signed it (deriving the
+    // transaction id itself requires the signatures). Added in the 0.39.0 network upgrade.
+    intent_commitment?: string;
   };
 }
 

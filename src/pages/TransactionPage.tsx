@@ -148,14 +148,16 @@ export default function TransactionPage() {
     enabled: !!id,
     retry: false,
   });
-  // The live result cache expires; a transaction's own receipt substate doesn't. Only tried once
-  // the result lookup has actually failed, and only for its events -- a receipt's diff summary
-  // carries no destroyed-substate list and only hashes (not full values) for created ones, so it
-  // can't recover the UTXOs or substate-diff sections, only what actually happened on-chain.
+  // The live result cache expires; a transaction's own receipt substate doesn't. Fetched
+  // unconditionally (not just as an events fallback) because it also carries `intent_commitment` --
+  // a value worth showing on every transaction, not only ones whose live result already expired. As
+  // an events source it's only used once the result lookup has actually failed, since a receipt's
+  // diff summary carries no destroyed-substate list and only hashes (not full values) for created
+  // ones, so it can't recover the UTXOs or substate-diff sections, only what actually happened.
   const receiptQuery = useQuery({
     queryKey: ["tx-receipt", id],
     queryFn: () => getTransactionReceipt(id),
-    enabled: !!id && resultQuery.isError,
+    enabled: !!id,
     retry: false,
   });
 
@@ -228,6 +230,19 @@ export default function TransactionPage() {
           <KeyValueRow label="Seal signer">
             {/* A public key, not a transaction id -- despite being the same 64-hex shape, it has no detail page. */}
             <Hash value={body.sealSignerPublicKey} link={false} />
+          </KeyValueRow>
+        )}
+        {receiptQuery.data?.receipt.intent_commitment && (
+          <KeyValueRow label="Intent commitment">
+            <div className="flex items-center gap-2">
+              <Hash value={receiptQuery.data.receipt.intent_commitment} link={false} />
+              <span
+                className="text-xs text-ink-faint"
+                title="Commits to every field the signers authorized, excluding the signatures themselves -- links this receipt to the transaction without revealing who signed it."
+              >
+                links to receipt without revealing signers
+              </span>
+            </div>
           </KeyValueRow>
         )}
       </Card>
