@@ -1,11 +1,25 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQueries, useQuery } from "@tanstack/react-query";
 import { listValidators } from "../lib/indexer";
-import { Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader } from "../components/ui";
+import { feeClaimGroups, getFeePoolTotal } from "../lib/feePool";
+import { formatMicroTari } from "../lib/format";
+import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel, Spinner } from "../components/ui";
 import { Hash } from "../components/Hash";
 import { Disclosure } from "../components/Disclosure";
 
 export default function ValidatorsPage() {
   const query = useQuery({ queryKey: ["validators"], queryFn: () => listValidators(100) });
+  const validators = query.data?.validators ?? [];
+  const groups = feeClaimGroups(validators);
+
+  const feeQueries = useQueries({
+    queries: groups.map((g) => ({
+      queryKey: ["fee-pool-total", g.claimPublicKeyHex],
+      queryFn: () => getFeePoolTotal(g.claimPublicKeyHex),
+      enabled: validators.length > 0,
+      staleTime: 30_000,
+    })),
+  });
+  const feeByClaimKey = new Map(groups.map((g, i) => [g.claimPublicKeyHex, feeQueries[i]]));
 
   return (
     <div>
@@ -14,7 +28,7 @@ export default function ValidatorsPage() {
       {query.isLoading && <LoadingBlock label="Loading validators…" />}
       {query.isError && <ErrorBlock message={(query.error as Error).message} />}
       {query.data && (
-        <Card>
+        <Card className="mb-8">
           <div className="hidden grid-cols-[minmax(0,2fr)_140px_120px_110px] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
             <span>Public key</span>
             <span>Shard group</span>
@@ -43,11 +57,73 @@ export default function ValidatorsPage() {
                 <KeyValueRow label="Fee claim public key">
                   <Hash value={v.fee_claim_public_key} link={false} />
                 </KeyValueRow>
+                <KeyValueRow label="Unclaimed fee pool">
+                  {(() => {
+                    const feeQuery = feeByClaimKey.get(v.fee_claim_public_key);
+                    const group = groups.find((g) => g.claimPublicKeyHex === v.fee_claim_public_key);
+                    if (!feeQuery || feeQuery.isLoading) return <Spinner className="h-3.5 w-3.5" />;
+                    if (feeQuery.isError) return <span className="text-ink-faint">—</span>;
+                    return (
+                      <span className="flex flex-wrap items-center gap-1.5">
+                        <span className="tabular text-ink">{formatMicroTari(feeQuery.data!.toString())} tTARI</span>
+                        {group && group.validatorPublicKeys.length > 1 && (
+                          <Badge tone="neutral" title="This claim key is shared by more than one validator -- the pool is per key, not per validator identity.">
+                            shared with {group.validatorPublicKeys.length - 1} other{group.validatorPublicKeys.length - 1 === 1 ? "" : "s"}
+                          </Badge>
+                        )}
+                      </span>
+                    );
+                  })()}
+                </KeyValueRow>
                 <KeyValueRow label="Active until">{v.end_epoch === null ? "still active" : `epoch ${v.end_epoch}`}</KeyValueRow>
               </div>
             </Disclosure>
           ))}
         </Card>
+      )}
+
+      {query.data && groups.length > 0 && (
+        <>
+          <SectionLabel>Fee pools</SectionLabel>
+          <p className="mb-3 text-xs text-ink-faint">
+            Each total is summed live across every shard's own <code className="text-ink-dim">ValidatorFeePool</code> substate for
+            that claim key (up to 256 per key) — not a single balance, and not fetched from any one place. Fees this
+            validator set has earned but not yet withdrawn via a <code className="text-ink-dim">ClaimValidatorFees</code>{" "}
+            instruction. Grouped by claim key, since a key — not a validator identity — is what a pool actually belongs to.
+          </p>
+          <Card>
+            <div className="hidden grid-cols-[minmax(0,2fr)_140px_minmax(0,1fr)] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
+              <span>Claim public key</span>
+              <span className="text-right">Unclaimed total</span>
+              <span>Used by</span>
+            </div>
+            {groups.map((g) => {
+              const feeQuery = feeByClaimKey.get(g.claimPublicKeyHex);
+              return (
+                <div
+                  key={g.claimPublicKeyHex}
+                  className="grid grid-cols-1 gap-1.5 border-b border-border-soft px-5 py-3.5 last:border-0 sm:grid-cols-[minmax(0,2fr)_140px_minmax(0,1fr)] sm:items-center sm:gap-3"
+                >
+                  <Hash value={g.claimPublicKeyHex} link={false} />
+                  <span className="tabular text-right text-sm text-ink">
+                    {feeQuery?.isLoading ? (
+                      <Spinner className="ml-auto h-3.5 w-3.5" />
+                    ) : feeQuery?.isError ? (
+                      "—"
+                    ) : (
+                      `${formatMicroTari(feeQuery!.data!.toString())} tTARI`
+                    )}
+                  </span>
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    {g.validatorPublicKeys.map((pk) => (
+                      <Hash key={pk} value={pk} link={false} className="text-xs" />
+                    ))}
+                  </div>
+                </div>
+              );
+            })}
+          </Card>
+        </>
       )}
     </div>
   );
