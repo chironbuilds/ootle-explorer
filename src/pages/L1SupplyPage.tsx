@@ -73,9 +73,10 @@ export default function L1SupplyPage() {
     ?.filter((t) => t.unlocked)
     .reduce((acc, t) => acc + t.totalMicroXtm, 0n);
   const upcoming = timeline?.filter((t) => !t.unlocked) ?? [];
-  const recentlyUnlocked = timeline
-    ? [...timeline.filter((t) => t.unlocked)].reverse().slice(0, 5)
-    : [];
+  // `timeline` is already sorted ascending by height -- slice(-5) keeps that order while still
+  // taking the 5 *most recent* unlocks (the last 5 in ascending order), so this reads as one
+  // continuous ascending sequence together with `upcoming` below, not two blocks running opposite ways.
+  const recentlyUnlocked = timeline?.filter((t) => t.unlocked).slice(-5) ?? [];
 
   const totalEverMinted =
     supply !== undefined ? BigInt(supply.minedRewards) + BigInt(supply.totalPreMine) : null;
