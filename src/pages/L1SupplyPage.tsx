@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { getL1Supply } from "../lib/l1";
-import { formatMicroTari, formatNumber } from "../lib/format";
+import { formatNumber } from "../lib/format";
 import { unlockTimeline, type UnlockTimelineEntry } from "../lib/preMineSchedule";
 import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel, StatTile } from "../components/ui";
 
@@ -20,8 +20,13 @@ const BENEFICIARY_LABEL: Record<string, string> = {
   network_rewards: "Network rewards (mining)",
 };
 
+/** Rounds to the nearest whole XTM for display -- at the scale this page deals in (millions to
+ * billions of XTM), the sub-unit remainder left over from integer µT division is meaningless
+ * noise (e.g. "111,124,999.999999"), not real precision anyone reading a supply overview needs. */
 function xtm(microXtm: string | bigint): string {
-  return formatMicroTari(typeof microXtm === "bigint" ? microXtm.toString() : microXtm);
+  const n = typeof microXtm === "bigint" ? microXtm : BigInt(microXtm);
+  const whole = (n + 500_000n) / 1_000_000n;
+  return formatNumber(whole.toString());
 }
 
 function formatEta(blocksAway: number, avgBlockSeconds: number | null): string {
