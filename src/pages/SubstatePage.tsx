@@ -10,6 +10,7 @@ import { ResourceActivity } from "../components/ResourceActivity";
 import { ComponentActivity } from "../components/ComponentActivity";
 import { UtxoDetail } from "../components/UtxoDetail";
 import { NftDetail } from "../components/NftDetail";
+import { ResourceDetail } from "../components/ResourceDetail";
 
 interface ComponentSubstate {
   header?: { template_address?: string; owner_rule?: { ByPublicKey?: string } };
@@ -35,12 +36,12 @@ interface ResourceInfo {
   symbol?: string;
 }
 
+function readRawResource(data: unknown): unknown {
+  return (data as { substate?: { Resource?: unknown } } | undefined)?.substate?.Resource;
+}
+
 function readResourceInfo(data: unknown): ResourceInfo | null {
-  const resource = (
-    data as
-      | { substate?: { Resource?: { resource_type?: string; divisibility?: number; metadata?: Record<string, string> } } }
-      | undefined
-  )?.substate?.Resource;
+  const resource = readRawResource(data) as { resource_type?: string; divisibility?: number; metadata?: Record<string, string> } | undefined;
   if (!resource?.resource_type) return null;
   return { resourceType: resource.resource_type, divisibility: resource.divisibility ?? 0, symbol: resource.metadata?.SYMBOL };
 }
@@ -132,12 +133,15 @@ export default function SubstatePage() {
             (() => {
               const info = readResourceInfo(query.data);
               return info ? (
-                <ResourceActivity
-                  resourceAddress={id}
-                  divisibility={info.divisibility}
-                  symbol={info.symbol}
-                  isConfidential={info.resourceType === "Stealth" || info.resourceType === "Confidential"}
-                />
+                <>
+                  <ResourceDetail resource={readRawResource(query.data)} divisibility={info.divisibility} />
+                  <ResourceActivity
+                    resourceAddress={id}
+                    divisibility={info.divisibility}
+                    symbol={info.symbol}
+                    isConfidential={info.resourceType === "Stealth" || info.resourceType === "Confidential"}
+                  />
+                </>
               ) : null;
             })()}
           <Card className="px-5 py-4">
