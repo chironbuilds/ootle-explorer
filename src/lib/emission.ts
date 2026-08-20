@@ -72,11 +72,21 @@ export function emissionAtHeight(params: EmissionParams, targetHeight: bigint): 
   return { rewardMicroXtm: reward, supplyMicroXtm: supply, inTailEmission: epoch > 0n };
 }
 
-/** Finds the first height at or after `fromHeight` where the schedule enters tail emission, by
+export interface TailEmissionCrossing {
+  height: bigint;
+  /** Total supply once this block's (first tail-rate) reward is included -- matches what
+   * `emissionAtHeight(params, height)` would report, verified by construction: same
+   * crossing-detection branch, same `supply += reward` order. */
+  supplyMicroXtm: bigint;
+}
+
+/** Finds the first height at or after genesis where the schedule enters tail emission, by
  * continuing the same iteration (reusing no state from a prior `emissionAtHeight` call, since the
  * per-block state -- reward/epoch/epochCounter -- isn't exposed). Capped at `maxHeight` so a
- * pathological parameter set can't hang the request. */
-export function heightAtTailEmission(params: EmissionParams, maxHeight: bigint): bigint | null {
+ * pathological parameter set can't hang the request. Returns the supply at that height too, in
+ * the same pass, since computing it via a second `emissionAtHeight` call would redo the same
+ * multi-million-iteration walk from genesis. */
+export function heightAtTailEmission(params: EmissionParams, maxHeight: bigint): TailEmissionCrossing | null {
   let supply = params.initialSupplyMicroXtm;
   let reward = 0n;
 
@@ -89,7 +99,8 @@ export function heightAtTailEmission(params: EmissionParams, maxHeight: bigint):
       if (decayed > cutoff) {
         reward = decayed;
       } else {
-        return blockNum;
+        supply += cutoff;
+        return { height: blockNum, supplyMicroXtm: supply };
       }
     }
     supply += reward;

@@ -130,9 +130,7 @@ export default async function handler(req: { method?: string }, res: {
       initialSupplyMicroXtm: BigInt(constants.pre_mine_value),
     };
     const currentEmission = emissionAtHeight(emissionParams, BigInt(tipHeight));
-    const tailEmissionHeight = currentEmission.inTailEmission
-      ? null
-      : heightAtTailEmission(emissionParams, 10_000_000n);
+    const tailCrossing = currentEmission.inTailEmission ? null : heightAtTailEmission(emissionParams, 10_000_000n);
 
     res.setHeader("Cache-Control", "s-maxage=60, stale-while-revalidate=300");
     res.status(200).json({
@@ -157,7 +155,13 @@ export default async function handler(req: { method?: string }, res: {
       emission: {
         currentBlockReward: currentEmission.rewardMicroXtm.toString(),
         inTailEmission: currentEmission.inTailEmission,
-        tailEmissionHeight: tailEmissionHeight?.toString() ?? null,
+        tailEmissionHeight: tailCrossing?.height.toString() ?? null,
+        // Supply once decay hands off to tail (inflation-based) emission -- not the same as the
+        // commonly-quoted "21B design target" (6.3B pre-mine + 14.7B decay-phase mining): decay
+        // doesn't converge to exactly that figure before the tail cutoff overtakes it, and supply
+        // keeps growing (~inflationBips/100 %/yr, compounding) forever after this point, so there
+        // is no actual hard cap. Null once already in tail emission (the crossing is in the past).
+        tailEmissionSupply: tailCrossing?.supplyMicroXtm.toString() ?? null,
       },
       recentBlockTime: {
         avgSeconds: avgBlockTimeSeconds,

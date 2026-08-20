@@ -111,8 +111,12 @@ export default function L1SupplyPage() {
             <StatTile
               label="Total minted so far"
               value={totalEverMinted !== null ? xtm(totalEverMinted) : "—"}
-              sub={`of ${formatNumber(TOTAL_SUPPLY_CAP_XTM.toString())} XTM max`}
-              title={totalEverMinted !== null ? `${xtm(totalEverMinted)} XTM` : undefined}
+              sub={`toward the ~${formatNumber(TOTAL_SUPPLY_CAP_XTM.toString())} XTM design target`}
+              title={
+                totalEverMinted !== null
+                  ? `${xtm(totalEverMinted)} XTM — not a hard cap; see "Tail emission" below`
+                  : undefined
+              }
               accent="reveal"
             />
             <StatTile
@@ -136,7 +140,9 @@ export default function L1SupplyPage() {
               accent="reveal"
               label={
                 <>
-                  <span>Total supply minted</span>
+                  <span title='Progress toward the commonly-cited "21B" figure -- not a hard cap. Tail emission keeps issuing slowly forever after decay hands off; see the "Tail emission" row below.'>
+                    Toward ~21B XTM design target
+                  </span>
                   <span className="tabular">
                     {totalEverMinted !== null ? ((Number(totalEverMinted) / 1e6 / Number(TOTAL_SUPPLY_CAP_XTM)) * 100).toFixed(1) : "—"}%
                   </span>
@@ -208,6 +214,13 @@ export default function L1SupplyPage() {
                   <span className="ml-2 text-xs text-ink-faint">
                     at height {formatNumber(query.data.emission.tailEmissionHeight)}, decay gives way to a fixed{" "}
                     {Number(query.data.constants.inflationBips) / 100}%/yr issuance
+                    {query.data.emission.tailEmissionSupply && (
+                      <>
+                        {" "}
+                        — supply will be ~{xtm(query.data.emission.tailEmissionSupply)} XTM by then, and keeps growing at
+                        that rate forever after (no hard cap)
+                      </>
+                    )}
                   </span>
                 </span>
               ) : (
@@ -252,6 +265,22 @@ export default function L1SupplyPage() {
             )}
             ).
           </p>
+          {upcoming[0] && (
+            <Card className="mb-4 px-5 py-4">
+              <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">Next unlock</p>
+              <p className="mt-1.5 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                <span className="tabular font-display text-lg font-semibold text-veil">{xtm(upcoming[0].totalMicroXtm)} XTM</span>
+                <span className="text-sm text-ink-dim">
+                  at height {formatNumber(upcoming[0].maturity)}, {formatEta(upcoming[0].maturity - currentHeight, avgBlockSeconds)} away
+                </span>
+              </p>
+              <p className="mt-1 text-xs text-ink-faint">
+                {Object.entries(upcoming[0].byBeneficiary)
+                  .map(([name, value]) => `${BENEFICIARY_LABEL[name] ?? name}: ${xtm(value)} XTM`)
+                  .join(" · ")}
+              </p>
+            </Card>
+          )}
           <Card className="mb-8">
             <div className="hidden grid-cols-[110px_130px_minmax(0,1fr)] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
               <span>Height</span>
@@ -261,6 +290,11 @@ export default function L1SupplyPage() {
             {recentlyUnlocked.map((entry) => (
               <UnlockRow key={`u-${entry.maturity}`} entry={entry} currentHeight={currentHeight} avgBlockSeconds={avgBlockSeconds} />
             ))}
+            {recentlyUnlocked.length > 0 && upcoming.length > 0 && (
+              <div className="border-b border-border-soft bg-surface-2/50 px-5 py-1.5 text-xs font-medium uppercase tracking-wide text-ink-faint">
+                Upcoming
+              </div>
+            )}
             {upcoming.slice(0, 8).map((entry) => (
               <UnlockRow key={`p-${entry.maturity}`} entry={entry} currentHeight={currentHeight} avgBlockSeconds={avgBlockSeconds} />
             ))}

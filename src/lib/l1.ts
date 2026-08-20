@@ -25,6 +25,7 @@ export interface L1SupplyResponse {
     currentBlockReward: string;
     inTailEmission: boolean;
     tailEmissionHeight: string | null;
+    tailEmissionSupply: string | null;
   };
   recentBlockTime: { avgSeconds: number | null; sampleBlocks: number; fromHeight: string | null; toHeight: string | null };
   powAlgoMix: Record<string, number>;
