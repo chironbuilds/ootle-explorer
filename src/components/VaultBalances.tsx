@@ -1,6 +1,6 @@
-import { useQueries } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { findVaultIds } from "../lib/cborState";
-import { getResource, getVault, type ResourceContainer } from "../lib/indexer";
+import { fetchSubstatesChunked, type RawResourceSubstate, type RawVaultSubstate, type ResourceContainer } from "../lib/indexer";
 import { formatAmount } from "../lib/format";
 import { nftSubstateId } from "../lib/nonFungible";
 import { Card, LoadingBlock, SectionLabel } from "./ui";
@@ -48,21 +48,28 @@ function containerAmount(container: ResourceContainer): Holding {
 export function VaultBalances({ componentState }: { componentState: unknown }) {
   const vaultIds = findVaultIds(componentState);
 
-  const vaultQueries = useQueries({
-    queries: vaultIds.map((id) => ({ queryKey: ["substate", id], queryFn: () => getVault(id) })),
+  const vaultsQuery = useQuery({
+    queryKey: ["substates-batch", "vaults", vaultIds],
+    queryFn: () => fetchSubstatesChunked(vaultIds),
+    enabled: vaultIds.length > 0,
   });
 
-  const loading = vaultQueries.some((q) => q.isLoading);
-  const resolved = vaultQueries
-    .map((q) => q.data)
-    .filter((d): d is NonNullable<typeof d> => !!d)
-    .map((d) => containerAmount(d.substate.Vault.resource_container));
+  const resolved = vaultIds
+    .map((id) => vaultsQuery.data?.[id]?.substate as RawVaultSubstate | undefined)
+    .filter((v): v is RawVaultSubstate => !!v)
+    .map((v) => containerAmount(v.Vault.resource_container));
 
   const resourceAddresses = [...new Set(resolved.map((r) => r.address))];
-  const resourceQueries = useQueries({
-    queries: resourceAddresses.map((address) => ({ queryKey: ["resource", address], queryFn: () => getResource(address) })),
+  const resourcesQuery = useQuery({
+    queryKey: ["substates-batch", "resources", resourceAddresses],
+    queryFn: () => fetchSubstatesChunked(resourceAddresses),
+    enabled: resourceAddresses.length > 0,
   });
-  const resourceByAddress = new Map(resourceAddresses.map((address, i) => [address, resourceQueries[i]?.data]));
+  const resourceByAddress = new Map(
+    resourceAddresses.map((address) => [address, (resourcesQuery.data?.[address]?.substate as RawResourceSubstate | undefined)?.Resource]),
+  );
+
+  const loading = vaultsQuery.isLoading || (resourceAddresses.length > 0 && resourcesQuery.isLoading);
 
   if (vaultIds.length === 0) return null;
 
@@ -79,8 +86,8 @@ export function VaultBalances({ componentState }: { componentState: unknown }) {
           </div>
           {resolved.map((r, i) => {
             const resource = resourceByAddress.get(r.address);
-            const divisibility = resource?.resource.divisibility ?? 0;
-            const symbol = resource?.resource.metadata?.SYMBOL;
+            const divisibility = resource?.divisibility ?? 0;
+            const symbol = resource?.metadata?.SYMBOL;
             const shown = r.tokenIds?.slice(0, MAX_TOKENS_SHOWN) ?? [];
             const hidden = (r.tokenIds?.length ?? 0) - shown.length;
             return (

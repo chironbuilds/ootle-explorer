@@ -1,7 +1,14 @@
 import { useState } from "react";
 import { useQueries, useQuery } from "@tanstack/react-query";
 import { findVaultIds } from "../lib/cborState";
-import { getResource, getVault, queryTransactionEvents, type ResourceContainer, type TransactionEvent } from "../lib/indexer";
+import {
+  fetchSubstatesChunked,
+  queryTransactionEvents,
+  type RawResourceSubstate,
+  type RawVaultSubstate,
+  type ResourceContainer,
+  type TransactionEvent,
+} from "../lib/indexer";
 import { formatAmount } from "../lib/format";
 import { Card, ErrorBlock, LoadingBlock, SectionLabel } from "./ui";
 import { Hash } from "./Hash";
@@ -77,19 +84,24 @@ function groupTransferRows(vaultId: string, divisibility: number, symbol: string
 function VaultTransfers({ componentState }: { componentState: unknown }) {
   const vaultIds = findVaultIds(componentState);
 
-  const vaultQueries = useQueries({ queries: vaultIds.map((id) => ({ queryKey: ["substate", id], queryFn: () => getVault(id) })) });
-  const resourceAddresses = [
-    ...new Set(
-      vaultQueries
-        .map((q) => q.data)
-        .filter((d): d is NonNullable<typeof d> => !!d)
-        .map((d) => containerResourceAddress(d.substate.Vault.resource_container)),
-    ),
-  ];
-  const resourceQueries = useQueries({
-    queries: resourceAddresses.map((address) => ({ queryKey: ["resource", address], queryFn: () => getResource(address) })),
+  const vaultsQuery = useQuery({
+    queryKey: ["substates-batch", "vaults", vaultIds],
+    queryFn: () => fetchSubstatesChunked(vaultIds),
+    enabled: vaultIds.length > 0,
   });
-  const resourceByAddress = new Map(resourceAddresses.map((address, i) => [address, resourceQueries[i]?.data]));
+  const vaultContainers = new Map(
+    vaultIds.map((id) => [id, (vaultsQuery.data?.[id]?.substate as RawVaultSubstate | undefined)?.Vault.resource_container]),
+  );
+
+  const resourceAddresses = [...new Set([...vaultContainers.values()].filter((c): c is ResourceContainer => !!c).map(containerResourceAddress))];
+  const resourcesQuery = useQuery({
+    queryKey: ["substates-batch", "resources", resourceAddresses],
+    queryFn: () => fetchSubstatesChunked(resourceAddresses),
+    enabled: resourceAddresses.length > 0,
+  });
+  const resourceByAddress = new Map(
+    resourceAddresses.map((address) => [address, (resourcesQuery.data?.[address]?.substate as RawResourceSubstate | undefined)?.Resource]),
+  );
 
   const transferQueries = useQueries({
     queries: vaultIds.map((id) => ({
@@ -98,14 +110,15 @@ function VaultTransfers({ componentState }: { componentState: unknown }) {
     })),
   });
 
-  const loading = vaultQueries.some((q) => q.isLoading) || transferQueries.some((q) => q.isLoading);
+  const loading =
+    vaultsQuery.isLoading || (resourceAddresses.length > 0 && resourcesQuery.isLoading) || transferQueries.some((q) => q.isLoading);
 
   const rows: TransferRow[] = vaultIds.flatMap((vaultId, i) => {
-    const container = vaultQueries[i]?.data?.substate.Vault.resource_container;
+    const container = vaultContainers.get(vaultId);
     const resourceAddress = container ? containerResourceAddress(container) : undefined;
     const resource = resourceAddress ? resourceByAddress.get(resourceAddress) : undefined;
     const events = transferQueries[i]?.data?.events ?? [];
-    return groupTransferRows(vaultId, resource?.resource.divisibility ?? 0, resource?.resource.metadata?.SYMBOL, events);
+    return groupTransferRows(vaultId, resource?.divisibility ?? 0, resource?.metadata?.SYMBOL, events);
   });
 
   if (vaultIds.length === 0) return null;

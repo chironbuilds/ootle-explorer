@@ -27,6 +27,20 @@ async function get<T>(path: string, params?: Record<string, string | number | un
     }
   }
   const res = await fetch(url, { headers: { Accept: "application/json" } });
+  return handleResponse<T>(res);
+}
+
+async function post<T>(path: string, body: unknown): Promise<T> {
+  const url = new URL(path.replace(/^\//, ""), INDEXER_URL + "/");
+  const res = await fetch(url, {
+    method: "POST",
+    headers: { Accept: "application/json", "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+  return handleResponse<T>(res);
+}
+
+async function handleResponse<T>(res: Response): Promise<T> {
   const body = await res.json().catch(() => null);
   if (!res.ok) {
     throw new IndexerError((body && (body.error ?? body.message)) || `HTTP ${res.status}`, res.status);
@@ -174,6 +188,41 @@ export interface SubstateResponse {
 
 export const getSubstate = (id: string, version?: number) =>
   get<SubstateResponse>(`/substates/${encodeURIComponent(id)}`, version !== undefined ? { version } : undefined);
+
+// POST since it takes a body, not because it mutates anything -- fetches up to 20 substates in one
+// round trip instead of one request each. Each entry has the same {substate, version} shape as a
+// single `/substates/{id}` fetch, but the batch endpoint never reports `verified` per item, so this
+// isn't a substitute for `getSubstate` wherever that status is shown.
+export interface FetchSubstatesResponse {
+  substates: Record<string, { substate: unknown; version: number }>;
+}
+
+// The handler enforces a hard cap of 20 ids per request despite the request type declaring 50 --
+// confirmed live (a 21st id gets rejected), so callers with more ids than that must chunk.
+export const MAX_BATCH_SUBSTATES = 20;
+
+export const fetchSubstates = (ids: string[]) =>
+  post<FetchSubstatesResponse>("/substates/fetch", { requests: ids, cached_only: false });
+
+/** Dedupes and pages through {@link fetchSubstates} in {@link MAX_BATCH_SUBSTATES}-sized batches so
+ * callers can pass an arbitrarily long id list without hand-rolling chunking. For the common case
+ * (a component's handful of held vaults/resources) this is a single request. */
+export async function fetchSubstatesChunked(ids: string[]): Promise<FetchSubstatesResponse["substates"]> {
+  const unique = [...new Set(ids)];
+  if (unique.length === 0) return {};
+  const chunks: string[][] = [];
+  for (let i = 0; i < unique.length; i += MAX_BATCH_SUBSTATES) chunks.push(unique.slice(i, i + MAX_BATCH_SUBSTATES));
+  const results = await Promise.all(chunks.map((chunk) => fetchSubstates(chunk)));
+  return Object.assign({}, ...results.map((r) => r.substates));
+}
+
+// The raw substate value shapes `fetchSubstatesChunked` returns for vaults/resources -- the same
+// envelope `/substates/{id}` itself returns, distinct from the specialized `/resources/{address}`
+// response shape (`ResourceResponse`) which flattens `resource.*` up a level.
+export type RawVaultSubstate = VaultSubstateResponse["substate"];
+export interface RawResourceSubstate {
+  Resource: ResourceResponse["resource"];
+}
 
 // A vault's held value is one of four shapes (`ResourceContainer` in tari-ootle's
 // `crates/engine_types/src/resource_container.rs`). Only `Fungible.amount` is a complete, exact
