@@ -10,8 +10,8 @@ import { Hash } from "./Hash";
  * the same validator set shown on the Validators page. */
 export function LatestCheckpoint() {
   const query = useQuery({ queryKey: ["epoch-checkpoint-latest"], queryFn: getLatestEpochCheckpoint, refetchInterval: 30_000 });
-  const header = query.data?.checkpoint.proof.V1.commit_proof.header;
-  const elements = query.data?.checkpoint.proof.V1.commit_proof.proof_elements ?? [];
+  const header = query.data?.checkpoint.proof.V1?.commit_proof.header;
+  const elements = query.data?.checkpoint.proof.V1?.commit_proof.proof_elements ?? [];
 
   if (!header) return null;
 

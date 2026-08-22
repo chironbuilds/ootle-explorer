@@ -92,8 +92,11 @@ export interface QuorumCertificate {
 
 export interface EpochCheckpointResponse {
   checkpoint: {
+    // Versioned like `TemplateDetailResponse.definition`; modeled optional so a future non-V1 proof
+    // degrades to "no checkpoint shown" instead of crashing, the same failure mode `proof_elements`
+    // hit above.
     proof: {
-      V1: {
+      V1?: {
         commit_proof: {
           header: {
             epoch: number;
