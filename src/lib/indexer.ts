@@ -102,7 +102,10 @@ export interface EpochCheckpointResponse {
             proposed_by: string;
             shard_group: { start: number; end_inclusive: number };
           };
-          proof_elements: { QuorumCertificate: QuorumCertificate }[];
+          // Other proof-element kinds exist (e.g. ChainLinks) alongside QuorumCertificate; only the
+          // latter is rendered here, so it's modeled as optionally present rather than enumerating
+          // every variant.
+          proof_elements: { QuorumCertificate?: QuorumCertificate }[];
         };
       };
     };

@@ -18,8 +18,8 @@ export function LatestCheckpoint() {
   const signers = [
     ...new Map(
       elements
-        .filter((e) => e.QuorumCertificate.decision === "Accept")
-        .flatMap((e) => e.QuorumCertificate.signatures)
+        .filter((e) => e.QuorumCertificate?.decision === "Accept")
+        .flatMap((e) => e.QuorumCertificate!.signatures)
         .map((s) => [s.public_key, s] as const),
     ).values(),
   ];
