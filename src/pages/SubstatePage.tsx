@@ -11,6 +11,8 @@ import { ComponentActivity } from "../components/ComponentActivity";
 import { UtxoDetail } from "../components/UtxoDetail";
 import { NftDetail } from "../components/NftDetail";
 import { ResourceDetail } from "../components/ResourceDetail";
+import { ShareButton } from "../components/ShareButton";
+import { useDocumentTitle, shortHash } from "../lib/useDocumentTitle";
 
 interface ComponentSubstate {
   header?: { template_address?: string; owner_rule?: { ByPublicKey?: string } };
@@ -63,6 +65,7 @@ const UNVERIFIED_TITLE =
 export default function SubstatePage() {
   const { id = "" } = useParams();
   const kind = substateKind(id);
+  useDocumentTitle(`${KIND_LABEL[kind] ?? "Substate"} ${shortHash(id)}`);
 
   // A substate lookup that fails (404 for something never indexed, 500 for the indexer's known
   // stealth-UTXO limitation) will fail identically on every retry -- the id doesn't change. Retrying
@@ -89,6 +92,7 @@ export default function SubstatePage() {
                 {query.data.verified ? "Committee-verified" : "Unverified"}
               </Badge>
             )}
+            <ShareButton path={`/substate/${id}`} />
           </div>
         }
       />

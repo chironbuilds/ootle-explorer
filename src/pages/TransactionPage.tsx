@@ -11,6 +11,8 @@ import { InstructionSummary } from "../components/InstructionSummary";
 import { Disclosure } from "../components/Disclosure";
 import { StealthTransferDetail } from "../components/StealthTransferDetail";
 import { describeSpendAuthorization, formatUtxoTag } from "../lib/utxo";
+import { useDocumentTitle, shortHash } from "../lib/useDocumentTitle";
+import { ShareButton } from "../components/ShareButton";
 
 /** Recursively finds the first array at a field named `key` -- the result envelope's exact
  * nesting (Finalized/Commit/Reject wrapping) varies more than is worth hand-modeling here. */
@@ -140,6 +142,7 @@ function UtxoSection({ upSubstates, downSubstates }: { upSubstates: [string, unk
 
 export default function TransactionPage() {
   const { id = "" } = useParams();
+  useDocumentTitle(`Transaction ${shortHash(id)}`);
 
   const txQuery = useQuery({ queryKey: ["tx", id], queryFn: () => getTransaction(id), enabled: !!id });
   const resultQuery = useQuery({
@@ -199,6 +202,7 @@ export default function TransactionPage() {
           <div className="flex items-center gap-2">
             <VeilBadge veiled={stealth} />
             <StatusPill outcome={tx.summary?.outcome} />
+            <ShareButton path={`/tx/${id}`} />
           </div>
         }
       />

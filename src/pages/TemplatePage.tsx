@@ -4,6 +4,8 @@ import { getTemplate, listCachedTemplates } from "../lib/indexer";
 import { formatArgType } from "../lib/templateAbi";
 import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel } from "../components/ui";
 import { Hash } from "../components/Hash";
+import { ShareButton } from "../components/ShareButton";
+import { useDocumentTitle } from "../lib/useDocumentTitle";
 
 // The indexer caps `limit` at 100 server-side -- matches TemplatesPage's own fetch, and shares its
 // query cache under the same key, so visiting from that list costs no extra request.
@@ -21,6 +23,7 @@ export default function TemplatePage() {
   // The detail endpoint only returns the ABI (name + definition); the size/epoch/author metadata
   // shown on the list only exists in the cached-list response, so both are fetched and joined here.
   const detail = useQuery({ queryKey: ["template", address], queryFn: () => getTemplate(address), enabled: !!address });
+  useDocumentTitle(detail.data?.name ? `Template ${detail.data.name}` : undefined);
   const cached = useQuery({ queryKey: ["templates"], queryFn: () => listCachedTemplates(CACHED_LIMIT) });
   const meta = cached.data?.templates.find((t) => t.address === address);
 
@@ -31,7 +34,12 @@ export default function TemplatePage() {
       <PageHeader
         title={detail.data?.name ?? <span className="font-mono text-xl">{address}</span>}
         sub="Template"
-        actions={<Badge tone="accent">WASM</Badge>}
+        actions={
+          <div className="flex items-center gap-2">
+            <Badge tone="accent">WASM</Badge>
+            <ShareButton path={`/template/${address}`} />
+          </div>
+        }
       />
 
       {detail.isLoading && <LoadingBlock label="Loading template…" />}

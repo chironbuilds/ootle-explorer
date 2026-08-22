@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { getL1Supply } from "../lib/l1";
 import { formatNumber } from "../lib/format";
 import { unlockTimeline, type UnlockTimelineEntry } from "../lib/preMineSchedule";
+import { useDocumentTitle } from "../lib/useDocumentTitle";
 import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, ProgressBar, SectionLabel, StatTile } from "../components/ui";
 
 const TOTAL_SUPPLY_CAP_XTM = 21_000_000_000n;
@@ -62,6 +63,7 @@ function UnlockRow({ entry, currentHeight, avgBlockSeconds }: { entry: UnlockTim
 }
 
 export default function L1SupplyPage() {
+  useDocumentTitle("L1 Supply");
   const query = useQuery({ queryKey: ["l1-supply"], queryFn: getL1Supply, refetchInterval: 60_000 });
 
   const supply = query.data?.supply;

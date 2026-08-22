@@ -1,12 +1,46 @@
 import { useQueries, useQuery } from "@tanstack/react-query";
-import { listValidators } from "../lib/indexer";
+import { listValidators, type Validator } from "../lib/indexer";
 import { feeClaimGroups, getFeePoolTotal } from "../lib/feePool";
 import { formatMicroTari } from "../lib/format";
-import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel, Spinner } from "../components/ui";
+import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel, Spinner, StatTile } from "../components/ui";
 import { Hash } from "../components/Hash";
 import { Disclosure } from "../components/Disclosure";
+import { useDocumentTitle } from "../lib/useDocumentTitle";
+
+/** One segment per validator, sized by its share of total vote power -- a consensus set this small
+   is legible directly as a stacked bar, no chart library needed. Colors cycle through the app's
+   semantic palette; hover identifies each slice. */
+const SEGMENT_COLORS = ["var(--accent)", "var(--veil)", "var(--reveal)", "var(--accent-dim)", "var(--success)", "var(--pending)"];
+
+function VotePowerDistribution({ validators }: { validators: Validator[] }) {
+  const total = validators.reduce((sum, v) => sum + v.vote_power, 0);
+  if (validators.length === 0 || total === 0) return null;
+  const even = validators.every((v) => v.vote_power === validators[0]!.vote_power);
+
+  return (
+    <Card className="mb-8 px-5 py-4">
+      <div className="mb-2.5 flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="font-medium uppercase tracking-wide text-ink-dim">Vote power distribution</span>
+        <span className="tabular text-ink-faint">
+          {validators.length} validator{validators.length === 1 ? "" : "s"} · {total.toLocaleString()} total{even ? " · evenly split" : ""}
+        </span>
+      </div>
+      <div className="flex h-3 w-full gap-px overflow-hidden rounded-full bg-surface-2">
+        {validators.map((v, i) => (
+          <div
+            key={v.public_key}
+            style={{ width: `${(v.vote_power / total) * 100}%`, backgroundColor: SEGMENT_COLORS[i % SEGMENT_COLORS.length] }}
+            title={`${v.public_key.slice(0, 16)}… — ${v.vote_power.toLocaleString()} vote power (${((v.vote_power / total) * 100).toFixed(1)}%)`}
+            className="transition-opacity hover:opacity-80"
+          />
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 export default function ValidatorsPage() {
+  useDocumentTitle("Validators");
   const query = useQuery({ queryKey: ["validators"], queryFn: () => listValidators(100) });
   const validators = query.data?.validators ?? [];
   const groups = feeClaimGroups(validators);
@@ -21,9 +55,21 @@ export default function ValidatorsPage() {
   });
   const feeByClaimKey = new Map(groups.map((g, i) => [g.claimPublicKeyHex, feeQueries[i]]));
 
+  const totalVotePower = validators.reduce((sum, v) => sum + v.vote_power, 0);
+
   return (
     <div>
       <PageHeader title="Validators" sub={query.data ? `Active at epoch ${query.data.epoch.toLocaleString()}` : "Active validator set"} />
+
+      {query.data && (
+        <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-3">
+          <StatTile label="Validators" value={validators.length} sub={`epoch ${query.data.epoch.toLocaleString()}`} accent="accent" />
+          <StatTile label="Total vote power" value={totalVotePower.toLocaleString()} accent="veil" />
+          <StatTile label="Fee claim pools" value={groups.length} sub="across all shards" accent="reveal" />
+        </div>
+      )}
+
+      {query.data && <VotePowerDistribution validators={validators} />}
 
       {query.isLoading && <LoadingBlock label="Loading validators…" />}
       {query.isError && <ErrorBlock message={(query.error as Error).message} />}

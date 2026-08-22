@@ -5,21 +5,9 @@ import { formatAmount } from "../lib/format";
 import { Card, ErrorBlock, LoadingBlock, SectionLabel } from "./ui";
 import { Hash } from "./Hash";
 import { Pagination } from "./Pagination";
+import { TopicBadge } from "./TopicBadge";
 
 const PAGE_SIZE = 15;
-
-const TOPIC_LABEL: Record<string, { label: string; tone: "success" | "danger" | "accent" }> = {
-  "std.vault.deposit": { label: "Deposit", tone: "success" },
-  "std.vault.withdraw": { label: "Withdraw", tone: "danger" },
-  "std.resource.mint": { label: "Mint", tone: "success" },
-  "std.resource.burn": { label: "Burn", tone: "danger" },
-};
-
-function TopicBadge({ topic }: { topic: string }) {
-  const known = TOPIC_LABEL[topic];
-  const tone = known?.tone === "success" ? "text-success bg-success/10" : known?.tone === "danger" ? "text-danger bg-danger/10" : "text-accent bg-accent/10";
-  return <span className={`inline-flex rounded-full px-2.5 py-1 text-xs font-medium ${tone}`}>{known?.label ?? topic}</span>;
-}
 
 /** A resource's own substate never changes on an ordinary transfer -- only the two vaults involved
  * do -- so "this token's activity" isn't a substate history, it's every std.vault.deposit/withdraw

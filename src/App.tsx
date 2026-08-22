@@ -7,6 +7,7 @@ import TemplatesPage from "./pages/TemplatesPage";
 import TemplatePage from "./pages/TemplatePage";
 import ValidatorsPage from "./pages/ValidatorsPage";
 import L1SupplyPage from "./pages/L1SupplyPage";
+import EventsPage from "./pages/EventsPage";
 import NotFoundPage from "./pages/NotFoundPage";
 
 export default function App() {
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="template/:address" element={<TemplatePage />} />
         <Route path="validators" element={<ValidatorsPage />} />
         <Route path="l1-supply" element={<L1SupplyPage />} />
+        <Route path="events" element={<EventsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>
