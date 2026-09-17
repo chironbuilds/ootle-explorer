@@ -5,6 +5,7 @@ import { getNetworkEconomics, listRecentTransactions, type RecentTransactionSumm
 import { formatMicroTari, formatNumber, formatRelativeTime } from "../lib/format";
 import { readTxBody, isStealthTransaction } from "../lib/txShape";
 import { useTxPulse } from "../lib/useTxPulse";
+import { useTransactionOutcome } from "../lib/transactionOutcome";
 import { Card, ErrorBlock, StatTile } from "../components/ui";
 import { Hash } from "../components/Hash";
 import { StatusPill, VeilBadge } from "../components/StatusPill";
@@ -19,6 +20,7 @@ const REFRESH_MS = 8_000;
 function TxRow({ tx, fresh }: { tx: RecentTransactionSummary; fresh: boolean }) {
   const body = readTxBody(tx.transaction);
   const stealth = isStealthTransaction(body);
+  const outcome = useTransactionOutcome(tx);
   return (
     <Link
       to={`/tx/${tx.transaction_id}`}
@@ -29,7 +31,7 @@ function TxRow({ tx, fresh }: { tx: RecentTransactionSummary; fresh: boolean }) 
         <VeilBadge veiled={stealth} />
       </div>
       <div className="justify-self-end sm:justify-self-auto">
-        <StatusPill outcome={tx.summary?.outcome} />
+        <StatusPill outcome={outcome} />
       </div>
       <span className="tabular justify-self-end text-right text-xs text-ink-faint">{formatRelativeTime(tx.created_at)}</span>
     </Link>

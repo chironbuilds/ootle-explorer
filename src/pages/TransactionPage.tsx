@@ -11,6 +11,7 @@ import { InstructionSummary } from "../components/InstructionSummary";
 import { Disclosure } from "../components/Disclosure";
 import { StealthTransferDetail } from "../components/StealthTransferDetail";
 import { describeSpendAuthorization, formatUtxoTag } from "../lib/utxo";
+import { deriveOutcomeFromResult } from "../lib/transactionOutcome";
 import { useDocumentTitle, shortHash } from "../lib/useDocumentTitle";
 import { ShareButton } from "../components/ShareButton";
 
@@ -186,6 +187,9 @@ export default function TransactionPage() {
   const eventsFromReceipt = !resultQuery.data && !!receiptQuery.data;
   const upSubstates = resultQuery.data ? (findArrayField(resultQuery.data, "up_substates") as [string, unknown][] | null) : null;
   const downSubstates = resultQuery.data ? (findArrayField(resultQuery.data, "down_substates") as [string, number][] | null) : null;
+  // `summary.outcome` is stalled on this indexer (see transactionOutcome.ts) -- fall back to the
+  // already-fetched live result instead of issuing a second query for it.
+  const outcome = tx.summary?.outcome ?? deriveOutcomeFromResult(resultQuery.data);
 
   return (
     <div>
@@ -201,7 +205,7 @@ export default function TransactionPage() {
         actions={
           <div className="flex items-center gap-2">
             <VeilBadge veiled={stealth} />
-            <StatusPill outcome={tx.summary?.outcome} />
+            <StatusPill outcome={outcome} />
             <ShareButton path={`/tx/${id}`} />
           </div>
         }
