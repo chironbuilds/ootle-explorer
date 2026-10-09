@@ -11,6 +11,8 @@ export type KnownAddressCategory = "builtin-template" | "builtin-component" | "b
 export interface KnownAddress {
   label: string;
   category: KnownAddressCategory;
+  /** Marks a template whose component calls count as burn transactions on the homepage. */
+  burn?: boolean;
   /** Where this one came from, for anything not implied by the protocol itself. */
   source?: string;
 }
@@ -52,6 +54,7 @@ export const KNOWN_ADDRESSES: Record<string, KnownAddress> = {
   f6bb3aa676b41c9d5748509dda66406e759d1b7fba5a83017cda88006b610282: {
     label: "CaravelBurnWallet",
     category: "community",
+    burn: true,
     source: "https://github.com/okansaglam016161-pixel/caravel-burn-wallet",
   },
 };

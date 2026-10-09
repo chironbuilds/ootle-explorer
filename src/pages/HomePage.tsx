@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { getNetworkEconomics, listRecentTransactions, type RecentTransactionSummary } from "../lib/indexer";
 import { formatMicroTari, formatNumber, formatRelativeTime } from "../lib/format";
 import { readTxBody, isStealthTransaction } from "../lib/txShape";
+import { useIsBurnTx } from "../lib/useBurnTx";
 import { useTxPulse } from "../lib/useTxPulse";
 import { useTransactionOutcome } from "../lib/transactionOutcome";
 import { Card, ErrorBlock, StatTile } from "../components/ui";
@@ -21,12 +22,20 @@ function TxRow({ tx, fresh }: { tx: RecentTransactionSummary; fresh: boolean }) 
   const body = readTxBody(tx.transaction);
   const stealth = isStealthTransaction(body);
   const outcome = useTransactionOutcome(tx);
+  const burn = useIsBurnTx(body);
   return (
     <Link
       to={`/tx/${tx.transaction_id}`}
       className={`grid grid-cols-[1fr_auto] items-center gap-3 border-b border-border-soft px-5 py-3.5 last:border-0 hover:bg-surface-2 sm:grid-cols-[minmax(0,2.2fr)_110px_150px_90px] ${fresh ? "flash-in" : ""}`}
     >
-      <Hash value={tx.transaction_id} link={false} />
+      <span className="flex min-w-0 items-center gap-2">
+        <Hash value={tx.transaction_id} link={false} />
+        {burn && (
+          <span role="img" aria-label="Burn transaction" title="Burn transaction">
+            🔥
+          </span>
+        )}
+      </span>
       <div className="hidden sm:block">
         <VeilBadge veiled={stealth} />
       </div>

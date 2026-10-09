@@ -52,3 +52,20 @@ export function isStealthTransaction(body: TxBody): boolean {
   const all = [...body.feeInstructions, ...body.instructions];
   return all.some((i) => typeof i === "object" && i !== null && "StealthTransfer" in (i as Record<string, unknown>));
 }
+
+/** True when any instruction is a `ClaimBurn` -- the L1-to-Ootle burn claim. */
+export function claimsBurn(body: TxBody): boolean {
+  return [...body.feeInstructions, ...body.instructions].some(
+    (i) => typeof i === "object" && i !== null && "ClaimBurn" in (i as Record<string, unknown>),
+  );
+}
+
+/** Component addresses the transaction calls directly (`CallMethod` with an `Address` target). */
+export function calledComponents(body: TxBody): string[] {
+  const out = new Set<string>();
+  for (const i of [...body.feeInstructions, ...body.instructions]) {
+    const call = (i as { CallMethod?: { call?: { Address?: unknown } } } | null)?.CallMethod?.call?.Address;
+    if (typeof call === "string" && call.startsWith("component_")) out.add(call);
+  }
+  return [...out];
+}
