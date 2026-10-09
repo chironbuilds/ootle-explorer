@@ -4,6 +4,7 @@ import { Link } from "react-router-dom";
 import { listCachedTemplates } from "../lib/indexer";
 import { Card, ErrorBlock, PageHeader } from "../components/ui";
 import { Hash } from "../components/Hash";
+import { KnownAddressBadge } from "../components/KnownAddressBadge";
 import { Pagination } from "../components/Pagination";
 import { TableRowsSkeleton } from "../components/Skeleton";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
@@ -118,7 +119,10 @@ export default function TemplatesPage() {
                 to={`/template/${t.address}`}
                 className="grid grid-cols-2 gap-2 border-b border-border-soft px-5 py-3.5 last:border-0 hover:bg-surface-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_90px_70px] sm:items-center sm:gap-3"
               >
-                <span className="font-medium text-ink">{t.name}</span>
+                <span className="flex items-center gap-2 font-medium text-ink">
+                  {t.name}
+                  <KnownAddressBadge address={t.address} />
+                </span>
                 <Hash value={t.address} link={false} />
                 <span className="tabular text-xs text-ink-faint">{formatBytes(t.code_size)}</span>
                 <span className="tabular text-xs text-ink-faint">{t.epoch}</span>

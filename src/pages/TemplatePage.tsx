@@ -4,6 +4,7 @@ import { getTemplate, listCachedTemplates } from "../lib/indexer";
 import { formatArgType } from "../lib/templateAbi";
 import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel } from "../components/ui";
 import { Hash } from "../components/Hash";
+import { KnownAddressBadge } from "../components/KnownAddressBadge";
 import { ShareButton } from "../components/ShareButton";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
@@ -37,6 +38,7 @@ export default function TemplatePage() {
         actions={
           <div className="flex items-center gap-2">
             <Badge tone="accent">WASM</Badge>
+            <KnownAddressBadge address={address} />
             <ShareButton path={`/template/${address}`} />
           </div>
         }

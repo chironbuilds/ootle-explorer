@@ -4,6 +4,7 @@ import { getSubstate } from "../lib/indexer";
 import { substateKind } from "../lib/format";
 import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader } from "../components/ui";
 import { Hash } from "../components/Hash";
+import { KnownAddressBadge } from "../components/KnownAddressBadge";
 import { JsonTree } from "../components/JsonTree";
 import { VaultBalances } from "../components/VaultBalances";
 import { ResourceActivity } from "../components/ResourceActivity";
@@ -87,6 +88,7 @@ export default function SubstatePage() {
         actions={
           <div className="flex items-center gap-2">
             <Badge tone="accent">{KIND_LABEL[kind] ?? kind}</Badge>
+            <KnownAddressBadge address={id} />
             {query.data && (
               <Badge tone={query.data.verified ? "reveal" : "neutral"} title={query.data.verified ? VERIFIED_TITLE : UNVERIFIED_TITLE}>
                 {query.data.verified ? "Committee-verified" : "Unverified"}
@@ -126,6 +128,7 @@ export default function SubstatePage() {
                   {templateAddress && (
                     <KeyValueRow label="Template">
                       <Hash value={templateAddress} linkOverride={`/template/${templateAddress}`} />
+                      <KnownAddressBadge address={templateAddress} />
                     </KeyValueRow>
                   )}
                 </Card>
