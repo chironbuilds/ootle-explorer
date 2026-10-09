@@ -31,7 +31,7 @@ function TxRow({ tx, fresh }: { tx: RecentTransactionSummary; fresh: boolean }) 
       <span className="flex min-w-0 items-center gap-2">
         <Hash value={tx.transaction_id} link={false} />
         {burn && (
-          <span role="img" aria-label="Burn transaction" title="Burn transaction">
+          <span className="burn-flame" role="img" aria-label="Burn transaction" title="Burn transaction">
             🔥
           </span>
         )}
