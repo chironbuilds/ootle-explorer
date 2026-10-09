@@ -5,6 +5,7 @@ import { readTxBody, isStealthTransaction } from "../lib/txShape";
 import { formatAbsoluteTime, formatMicroTari, formatRelativeTime } from "../lib/format";
 import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel } from "../components/ui";
 import { Hash } from "../components/Hash";
+import { KnownAddressBadge } from "../components/KnownAddressBadge";
 import { StatusPill, VeilBadge } from "../components/StatusPill";
 import { JsonTree } from "../components/JsonTree";
 import { InstructionSummary } from "../components/InstructionSummary";
@@ -261,7 +262,10 @@ export default function TransactionPage() {
           <Card>
             {body.inputs.map((input, i) => (
               <div key={i} className="flex items-center justify-between border-b border-border-soft px-5 py-3 last:border-0">
-                <Hash value={input.substate_id} />
+                <span className="flex items-center gap-2">
+                  <Hash value={input.substate_id} />
+                  <KnownAddressBadge address={input.substate_id} />
+                </span>
                 <span className="tabular text-xs text-ink-faint">{input.version === null ? "latest" : `v${input.version}`}</span>
               </div>
             ))}
@@ -306,7 +310,12 @@ export default function TransactionPage() {
               <div key={i} className="border-b border-border-soft px-5 py-3.5 last:border-0">
                 <div className="mb-1.5 flex flex-wrap items-center gap-2">
                   <span className="font-mono text-xs font-medium text-accent">{event.topic}</span>
-                  {event.substate_id && <Hash value={event.substate_id} />}
+                  {event.substate_id && (
+                    <>
+                      <Hash value={event.substate_id} />
+                      <KnownAddressBadge address={event.substate_id} />
+                    </>
+                  )}
                 </div>
                 {!!event.payload && Object.keys(event.payload as object).length > 0 && <JsonTree data={event.payload} />}
               </div>
@@ -332,6 +341,7 @@ export default function TransactionPage() {
                   <>
                     <Badge tone="reveal">created</Badge>
                     <Hash value={id} />
+                    <KnownAddressBadge address={id} />
                   </>
                 }
               >
@@ -342,6 +352,7 @@ export default function TransactionPage() {
               <div key={`down-${id}`} className="flex flex-wrap items-center gap-2 border-b border-border-soft px-5 py-3 last:border-0">
                 <Badge tone="veil">destroyed</Badge>
                 <Hash value={id} />
+                    <KnownAddressBadge address={id} />
                 <span className="tabular text-xs text-ink-faint">v{version}</span>
               </div>
             ))}

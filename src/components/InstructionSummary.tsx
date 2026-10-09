@@ -1,5 +1,6 @@
 import type { ReactNode } from "react";
 import { Hash } from "./Hash";
+import { KnownAddressBadge } from "./KnownAddressBadge";
 import { Badge } from "./ui";
 
 // A human-readable one-liner for a transaction `Instruction`, per the `Instruction` enum in
@@ -11,7 +12,15 @@ import { Badge } from "./ui";
 
 function componentOrWorkspace(ref: unknown): ReactNode {
   if (ref && typeof ref === "object") {
-    if ("Address" in ref) return <Hash value={(ref as { Address: string }).Address} />;
+    if ("Address" in ref) {
+      const address = (ref as { Address: string }).Address;
+      return (
+        <span className="inline-flex items-center gap-2">
+          <Hash value={address} />
+          <KnownAddressBadge address={address} />
+        </span>
+      );
+    }
     if ("Workspace" in ref) return <span className="font-mono text-xs text-ink-dim">workspace[{String((ref as { Workspace: unknown }).Workspace)}]</span>;
   }
   return <span className="text-ink-faint">—</span>;
