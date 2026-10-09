@@ -228,26 +228,62 @@ body {
   border-radius: 4px;
 }
 
-/* Animated burn marker: the flame flickers (scale/skew/tilt around its base) while a warm glow
- * pulses behind it. Pure CSS so it stays crisp at any size; the reduced-motion rule below
- * collapses it to a still emoji. */
-@keyframes flame-flicker {
-  0%, 100% { transform: scale(1, 1) rotate(-3deg) skewX(0deg); }
-  20% { transform: scale(1.08, 1.18) rotate(2deg) skewX(-4deg); }
-  40% { transform: scale(0.95, 1.05) rotate(-2deg) skewX(3deg); }
-  60% { transform: scale(1.1, 1.22) rotate(3deg) skewX(-3deg); }
-  80% { transform: scale(0.97, 1.08) rotate(-1deg) skewX(2deg); }
-}
-
-@keyframes flame-glow {
-  0%, 100% { filter: drop-shadow(0 0 2px rgba(255, 140, 30, 0.55)); }
-  50% { filter: drop-shadow(0 0 7px rgba(255, 90, 20, 0.95)); }
-}
-
+/* Animated burn marker (see BurnFlame.tsx): each flame layer flickers from its base on its own
+ * timing so the layers drift in and out of phase, embers rise and fade, and a glow breathes behind
+ * the whole thing. Reduced-motion collapses every duration, leaving a still flame. */
 .burn-flame {
   display: inline-block;
-  transform-origin: 50% 90%;
-  animation: flame-flicker 1.1s ease-in-out infinite, flame-glow 1.6s ease-in-out infinite;
+  flex-shrink: 0;
+  vertical-align: middle;
+  animation: burn-glow 1.7s ease-in-out infinite;
+}
+
+.burn-layer {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+}
+
+.burn-outer { animation: burn-flicker-a 0.9s ease-in-out infinite; }
+.burn-mid { animation: burn-flicker-b 0.7s ease-in-out infinite; }
+.burn-core { animation: burn-flicker-c 0.5s ease-in-out infinite; }
+
+@keyframes burn-flicker-a {
+  0%, 100% { transform: scale(1, 1) skewX(0deg); }
+  25% { transform: scale(1.04, 1.1) skewX(-4deg); }
+  50% { transform: scale(0.97, 0.96) skewX(3deg); }
+  75% { transform: scale(1.03, 1.14) skewX(-2deg); }
+}
+
+@keyframes burn-flicker-b {
+  0%, 100% { transform: scale(1, 1) skewX(0deg); }
+  30% { transform: scale(0.96, 1.12) skewX(5deg); }
+  60% { transform: scale(1.05, 0.94) skewX(-4deg); }
+}
+
+@keyframes burn-flicker-c {
+  0%, 100% { transform: scale(1, 1); opacity: 1; }
+  40% { transform: scale(0.9, 1.2); opacity: 0.85; }
+  70% { transform: scale(1.08, 0.92); opacity: 1; }
+}
+
+@keyframes burn-glow {
+  0%, 100% { filter: drop-shadow(0 0 3px rgba(255, 110, 20, 0.55)) drop-shadow(0 0 8px rgba(255, 60, 10, 0.25)); }
+  50% { filter: drop-shadow(0 0 5px rgba(255, 150, 40, 0.9)) drop-shadow(0 0 13px rgba(255, 80, 15, 0.5)); }
+}
+
+.burn-ember {
+  transform-box: fill-box;
+  opacity: 0;
+  animation: burn-ember 1.8s ease-out infinite;
+}
+.burn-ember-a { animation-delay: 0s; }
+.burn-ember-b { animation-delay: 0.6s; }
+.burn-ember-c { animation-delay: 1.2s; }
+
+@keyframes burn-ember {
+  0% { transform: translate(0, 4px) scale(1); opacity: 0; }
+  15% { opacity: 1; }
+  100% { transform: translate(2px, -9px) scale(0.3); opacity: 0; }
 }
 
 @media (prefers-reduced-motion: reduce) {

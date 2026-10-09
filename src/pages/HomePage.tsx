@@ -9,6 +9,7 @@ import { useTxPulse } from "../lib/useTxPulse";
 import { useTransactionOutcome } from "../lib/transactionOutcome";
 import { Card, ErrorBlock, StatTile } from "../components/ui";
 import { Hash } from "../components/Hash";
+import { BurnFlame } from "../components/BurnFlame";
 import { StatusPill, VeilBadge } from "../components/StatusPill";
 import { Pagination } from "../components/Pagination";
 import { LatestCheckpoint } from "../components/LatestCheckpoint";
@@ -30,11 +31,7 @@ function TxRow({ tx, fresh }: { tx: RecentTransactionSummary; fresh: boolean }) 
     >
       <span className="flex min-w-0 items-center gap-2">
         <Hash value={tx.transaction_id} link={false} />
-        {burn && (
-          <span className="burn-flame" role="img" aria-label="Burn transaction" title="Burn transaction">
-            🔥
-          </span>
-        )}
+        {burn && <BurnFlame />}
       </span>
       <div className="hidden sm:block">
         <VeilBadge veiled={stealth} />
