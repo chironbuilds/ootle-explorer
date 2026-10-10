@@ -33,7 +33,7 @@ export default function TemplatePage() {
         title={detail.data?.name ?? <span className="font-mono text-xl">{address}</span>}
         sub="Template"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge tone="accent">WASM</Badge>
             <KnownAddressBadge address={address} />
             <ShareButton path={`/template/${address}`} />

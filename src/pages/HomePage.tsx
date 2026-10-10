@@ -17,6 +17,16 @@ import { Sparkline } from "../components/Sparkline";
 import { StatTileSkeleton, TableRowsSkeleton } from "../components/Skeleton";
 
 const PAGE_SIZE = 20;
+
+/** Rounds a formatted tTARI figure's fraction to 2 digits once it is large (>= 1,000), so a figure like
+ * 3,299,746.66729 fits a phone-width tile whole; the tooltip keeps the exact value. */
+function roundLarge(formatted: string): string {
+  const [int, frac] = formatted.split(".");
+  if (!frac || int!.replace(/,/g, "").length < 4) return formatted;
+  const rounded = Math.round(Number(`0.${frac}`) * 100);
+  if (rounded >= 100) return formatted; // carry would change the integer part; leave exact rather than risk it
+  return `${int}.${String(rounded).padStart(2, "0")}`;
+}
 const REFRESH_MS = 8_000;
 
 function TxRow({ tx, fresh }: { tx: RecentTransactionSummary; fresh: boolean }) {
@@ -147,7 +157,7 @@ export default function HomePage() {
             <StatTile label="Epoch" value={economics.data ? formatNumber(economics.data.current_epoch) : "—"} accent="accent" />
             <StatTile
               label="Total supply"
-              value={economics.data ? formatMicroTari(economics.data.total_supply) : "—"}
+              value={economics.data ? roundLarge(formatMicroTari(economics.data.total_supply)) : "—"}
               title={economics.data ? formatMicroTari(economics.data.total_supply) + " tTARI" : undefined}
               sub="tTARI"
               accent="reveal"
@@ -164,8 +174,8 @@ export default function HomePage() {
 
       {/* Live pulse -- arrival rate sampled from this tab's own polling, so it reflects exactly what
           you're seeing rather than a global statistic nobody can verify from here. */}
-      <Card className="mb-8 flex flex-wrap items-center gap-x-8 gap-y-4 px-5 py-4 fade-up">
-        <div className="flex items-center gap-3">
+      <Card className="mb-8 flex flex-wrap items-center gap-x-8 gap-y-3 px-5 py-4 fade-up">
+        <div className="flex min-w-0 flex-1 items-center gap-3 sm:flex-none">
           <span
             className={`h-2 w-2 shrink-0 rounded-full ${pollingFirstPage ? "pulse-dot bg-success" : "bg-ink-faint"}`}
             title={pollingFirstPage ? "Live" : "Live updates paused"}
@@ -181,16 +191,20 @@ export default function HomePage() {
           </div>
         </div>
 
-        {pulse.series.length > 1 ? (
-          <>
-            <Sparkline data={pulse.series} width={200} height={40} color="var(--accent)" className="hidden sm:block" />
-            <p className="tabular text-xs text-ink-faint">
-              {pulse.totalArrivals} new transaction{pulse.totalArrivals === 1 ? "" : "s"} observed since this tab opened
-            </p>
-          </>
-        ) : (
-          <p className="text-xs text-ink-faint">{pollingFirstPage ? "Measuring activity…" : "Paused — resume to measure activity."}</p>
-        )}
+        {/* On phones the sparkline/status text drops to its own full-width row under the figure and the pause
+            button; from sm up it sits inline as before. */}
+        <div className="order-last flex w-full flex-wrap items-center gap-x-8 gap-y-1 sm:order-none sm:w-auto">
+          {pulse.series.length > 1 ? (
+            <>
+              <Sparkline data={pulse.series} width={200} height={40} color="var(--accent)" className="hidden sm:block" />
+              <p className="tabular text-xs text-ink-faint">
+                {pulse.totalArrivals} new transaction{pulse.totalArrivals === 1 ? "" : "s"} observed since this tab opened
+              </p>
+            </>
+          ) : (
+            <p className="text-xs text-ink-faint">{pollingFirstPage ? "Measuring activity…" : "Paused — resume to measure activity."}</p>
+          )}
+        </div>
 
         <div className="ml-auto flex items-center gap-2">
           {recent.isFetching && !recent.isLoading && <span className="text-xs text-ink-faint">refreshing…</span>}

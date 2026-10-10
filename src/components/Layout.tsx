@@ -111,7 +111,7 @@ export function Layout() {
                 to={item.to}
                 end={item.end}
                 className={({ isActive }) =>
-                  `rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
+                  `whitespace-nowrap rounded-md px-3 py-1.5 text-sm font-medium transition-colors ${
                     isActive ? "bg-surface-2 text-ink" : "text-ink-dim hover:text-ink"
                   }`
                 }
@@ -135,7 +135,7 @@ export function Layout() {
             <NetworkPill />
           </div>
         </div>
-        <nav className="flex items-center gap-1 overflow-x-auto border-t border-border-soft px-5 py-2 md:hidden">
+        <nav className="flex items-center gap-1 overflow-x-auto border-t border-border-soft px-5 py-2 [mask-image:linear-gradient(to_right,#000_calc(100%-28px),transparent)] md:hidden">
           {NAV.map((item) => (
             <NavLink
               key={item.to}

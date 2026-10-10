@@ -19,9 +19,11 @@ export function StatTile({
 }) {
   const colors = { accent: "text-accent", reveal: "text-reveal", veil: "text-veil" } as const;
   return (
-    <Card className="min-w-0 p-5">
+    <Card className="min-w-0 p-4 sm:p-5">
       <p className="text-xs font-medium uppercase tracking-wide text-ink-faint">{label}</p>
-      <p title={title} className={`font-display tabular mt-2 truncate text-2xl font-semibold ${colors[accent]}`}>
+      {/* Smaller on phones so a long figure (e.g. total supply) fits whole instead of being cut off; truncate
+          remains only as a last resort, with the full value in the tooltip. */}
+      <p title={title} className={`font-display tabular mt-2 truncate text-[1.15rem] font-semibold min-[400px]:text-xl sm:text-2xl ${colors[accent]}`}>
         {value}
       </p>
       {sub && <p className="mt-1 text-xs text-ink-dim">{sub}</p>}

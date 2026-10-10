@@ -35,7 +35,7 @@ function Node({ label, value, depth }: { label?: string; value: unknown; depth: 
 
   if (value === null || typeof value !== "object") {
     return (
-      <div className="py-0.5 pl-4" style={{ marginLeft: depth === 0 ? 0 : 12 }}>
+      <div className="py-0.5 pl-4 [overflow-wrap:anywhere]" style={{ marginLeft: depth === 0 ? 0 : 12 }}>
         {label !== undefined && <span className="text-ink-dim">{label}: </span>}
         <Primitive label={label} value={value as string | number | boolean | null} />
       </div>
@@ -48,11 +48,11 @@ function Node({ label, value, depth }: { label?: string; value: unknown; depth: 
   const summary = isArray ? `Array(${entries.length})` : `Object(${entries.length})`;
 
   return (
-    <div style={{ marginLeft: depth === 0 ? 0 : 12 }}>
+    <div className="min-w-0" style={{ marginLeft: depth === 0 ? 0 : 12 }}>
       <button
         onClick={() => setOpen((o) => !o)}
         disabled={empty}
-        className="flex items-center gap-1 py-0.5 text-left disabled:cursor-default"
+        className="flex max-w-full items-center gap-1 py-0.5 text-left [overflow-wrap:anywhere] disabled:cursor-default"
       >
         {!empty && (
           <svg width="9" height="9" viewBox="0 0 10 10" fill="none" className={`shrink-0 transition-transform ${open ? "rotate-90" : ""}`}>

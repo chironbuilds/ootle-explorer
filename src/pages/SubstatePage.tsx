@@ -87,7 +87,7 @@ export default function SubstatePage() {
         }
         sub="Substate"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <Badge tone="accent">{KIND_LABEL[kind] ?? kind}</Badge>
             <KnownAddressBadge address={id} />
             {query.data && (

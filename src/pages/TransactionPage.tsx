@@ -221,7 +221,7 @@ export default function TransactionPage() {
         }
         sub="Transaction"
         actions={
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             <BurnTag body={body} />
             <VeilBadge veiled={stealth} />
             <StatusPill outcome={outcome} />
