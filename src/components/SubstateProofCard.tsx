@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { getSubstateWithProof } from "../lib/indexer";
 import { Card, ErrorBlock, KeyValueRow, SectionLabel, Spinner } from "./ui";
 import { Hash } from "./Hash";
+import { verifySubstateProof, type ProofVerification } from "../lib/verifyProof";
 
 function byteLength(b64: string): number {
   const padding = b64.endsWith("==") ? 2 : b64.endsWith("=") ? 1 : 0;
@@ -11,6 +12,55 @@ function byteLength(b64: string): number {
 
 function formatBytes(n: number): string {
   return n < 1024 ? `${n} B` : `${(n / 1024).toFixed(1)} KB`;
+}
+
+function CheckRow({ ok, title, detail }: { ok: boolean; title: string; detail: string }) {
+  return (
+    <div className="flex items-start gap-3 px-5 py-2.5">
+      <span className={`mt-0.5 text-base leading-none ${ok ? "text-success" : "text-danger"}`} aria-label={ok ? "passed" : "failed"}>
+        {ok ? "✓" : "✗"}
+      </span>
+      <div className="min-w-0">
+        <div className="text-sm font-medium text-ink">{title}</div>
+        <div className="break-words text-xs text-ink-faint">{detail}</div>
+      </div>
+    </div>
+  );
+}
+
+function VerificationResult({ result }: { result: ProofVerification }) {
+  const all = result.commitOk && result.valueOk;
+  return (
+    <div className="border-t border-border-soft py-2">
+      <div className={`px-5 py-2 text-sm font-semibold ${all ? "text-success" : "text-danger"}`}>
+        {all ? "Proof verified in your browser" : "Proof did not verify"}
+      </div>
+      <CheckRow
+        ok={result.commitOk}
+        title="Committee signed the anchor block"
+        detail={
+          result.commitOk
+            ? `Quorum certificates carry at least ${result.quorumThreshold} of ${result.committeeSize} committee members, so the state root was committee-signed.`
+            : (result.commitError ?? "Commit proof check failed.")
+        }
+      />
+      <CheckRow
+        ok={result.valueOk}
+        title="Value is in the signed state"
+        detail={
+          result.valueOk
+            ? "The substate value, re-hashed here, is the leaf the merkle proof places under that state root."
+            : result.commitOk
+              ? (result.valueError ?? "Value proof check failed.")
+              : "Skipped: the commit proof has to pass first."
+        }
+      />
+      <p className="px-5 pt-1 text-xs text-ink-faint">
+        The committee's keys come from this indexer's validator list, so this shows the proof is sound and signed by those keys, not that the list
+        itself is honest.
+      </p>
+    </div>
+  );
 }
 
 /** Inclusion proof for a committee-verified substate. Fetched on demand (the proof is a few KB of
@@ -28,6 +78,9 @@ export function SubstateProofCard({ id }: { id: string }) {
     staleTime: 60_000,
   });
   const proof = query.data?.proof;
+  const verify = useMutation({
+    mutationFn: () => verifySubstateProof(id, query.data!.version!, query.data!.substate, query.data!.proof!),
+  });
 
   const download = () => {
     if (!proof) return;
@@ -82,11 +135,21 @@ export function SubstateProofCard({ id }: { id: string }) {
           <KeyValueRow label="Proof size">
             commit {formatBytes(byteLength(proof.commit_proof))} · value {formatBytes(byteLength(proof.value_proof))}
           </KeyValueRow>
+          {verify.isError && (
+            <div className="border-t border-border-soft px-5 py-3.5 text-sm text-danger">Could not run the check: {(verify.error as Error).message}</div>
+          )}
+          {verify.data && <VerificationResult result={verify.data} />}
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-border-soft px-5 py-3.5">
             <p className="max-w-xl text-xs text-ink-faint">
-              Shows the value was committed at this block; it says nothing about later changes. Verifying it independently needs the committee for
-              epoch {proof.anchor.epoch}. The indexer already did this check.
+              Shows the value was committed at this block (epoch {proof.anchor.epoch}); it says nothing about later changes. Use Verify proof to check it in your browser.
             </p>
+            <button
+              onClick={() => verify.mutate()}
+              disabled={verify.isPending}
+              className="rounded-lg border border-accent-dim bg-accent-wash px-3 py-2 text-xs font-medium text-accent transition-colors hover:text-accent-strong disabled:opacity-60"
+            >
+              {verify.isPending ? "Verifying…" : verify.data ? "Verify again" : "Verify proof"}
+            </button>
             <button
               onClick={download}
               className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-ink-dim transition-colors hover:border-accent-dim hover:text-ink"

@@ -1,0 +1,23 @@
+[package]
+name = "proof_verify_wasm"
+version = "0.1.0"
+edition = "2024"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+tari_ootle_storage = { workspace = true }
+tari_engine_types = { workspace = true }
+tari_ootle_common_types = { workspace = true }
+tari_common_types = { workspace = true }
+tari_crypto = { workspace = true }
+tari_template_lib_types = { workspace = true }
+ootle-network = { workspace = true }
+wasm-bindgen = "0.2"
+serde = { workspace = true, features = ["derive"] }
+serde_json = { workspace = true }
+base64 = "0.22"
+hex = "0.4"
+getrandom = { version = "0.2", features = ["js"] }
