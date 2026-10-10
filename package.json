@@ -6,10 +6,12 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:api": "tsc -p tsconfig.api-build.json",
     "lint": "oxlint",
     "preview": "vite preview"
   },
   "dependencies": {
+    "@chironbuilder/ootle-sdk": "^0.1.16",
     "@grpc/grpc-js": "^1.14.4",
     "@grpc/proto-loader": "^0.8.1",
     "@noble/hashes": "^2.3.0",
