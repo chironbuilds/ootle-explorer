@@ -15,6 +15,7 @@ import { describeSpendAuthorization, formatUtxoTag } from "../lib/utxo";
 import { deriveOutcomeFromResult } from "../lib/transactionOutcome";
 import { useDocumentTitle, shortHash } from "../lib/useDocumentTitle";
 import { ShareButton } from "../components/ShareButton";
+import { TxSummary } from "../components/TxSummary";
 import { BurnFlame } from "../components/BurnFlame";
 import { useIsBurnTx } from "../lib/useBurnTx";
 
@@ -227,6 +228,8 @@ export default function TransactionPage() {
           </div>
         }
       />
+
+      <TxSummary body={body} />
 
       <Card className="mb-8">
         <KeyValueRow label="Created">
