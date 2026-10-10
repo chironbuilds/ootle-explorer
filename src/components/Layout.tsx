@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getIdentity, getNetworkInfo } from "../lib/indexer";
@@ -146,7 +146,13 @@ export function Layout() {
 
       <main className="mx-auto max-w-6xl px-5 py-8">
         <ErrorBoundary key={location.pathname}>
-          <Outlet />
+          {/* Suspense lives here, inside the layout, so loading a page's code never blanks the header; its
+              fallback only appears after a short delay so fast loads show no flash at all. */}
+          <Suspense fallback={<div className="page-fallback" aria-busy="true" />}>
+            <div className="page-in">
+              <Outlet />
+            </div>
+          </Suspense>
         </ErrorBoundary>
       </main>
 

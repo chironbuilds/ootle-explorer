@@ -161,6 +161,45 @@ body {
   }
 }
 
+/* Route change: a quick opacity-only fade (no movement, so nothing shifts while content streams in). */
+@keyframes page-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.page-in {
+  animation: page-in 0.18s ease-out both;
+}
+
+/* Suspense fallback while a page chunk loads: invisible for the first 200ms so fast loads never
+   flash, then a slim indeterminate bar. */
+@keyframes fallback-show {
+  to { opacity: 1; }
+}
+
+@keyframes fallback-slide {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(250%); }
+}
+
+.page-fallback {
+  position: relative;
+  height: 2px;
+  width: 100%;
+  overflow: hidden;
+  opacity: 0;
+  animation: fallback-show 0.1s 0.2s forwards;
+}
+
+.page-fallback::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: var(--accent);
+  animation: fallback-slide 1s ease-in-out infinite;
+}
+
 .fade-up {
   animation: fade-up 0.3s ease-out both;
 }

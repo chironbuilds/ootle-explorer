@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { keepPreviousData, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "react-router-dom";
-import { getNetworkEconomics, listRecentTransactions, type RecentTransactionSummary } from "../lib/indexer";
+import { getNetworkEconomics, getTransactionResult, listRecentTransactions, type RecentTransactionSummary } from "../lib/indexer";
 import { formatMicroTari, formatNumber, formatRelativeTime } from "../lib/format";
 import { readTxBody, isStealthTransaction } from "../lib/txShape";
 import { useIsBurnTx } from "../lib/useBurnTx";
@@ -24,9 +24,24 @@ function TxRow({ tx, fresh }: { tx: RecentTransactionSummary; fresh: boolean }) 
   const stealth = isStealthTransaction(body);
   const outcome = useTransactionOutcome(tx);
   const burn = useIsBurnTx(body);
+  const queryClient = useQueryClient();
+  // Warm the transaction page before the click lands: the list row already holds the full
+  // transaction, so seed that cache entry (the page paints instantly and refreshes behind it) and
+  // start the live-result fetch that the page would otherwise wait on.
+  const prefetch = () => {
+    queryClient.setQueryData(["tx", tx.transaction_id], (old: unknown) => old ?? { transaction: tx });
+    void queryClient.prefetchQuery({
+      queryKey: ["tx-result", tx.transaction_id],
+      queryFn: () => getTransactionResult(tx.transaction_id),
+      retry: false,
+    });
+  };
   return (
     <Link
       to={`/tx/${tx.transaction_id}`}
+      onPointerEnter={prefetch}
+      onFocus={prefetch}
+      onClick={prefetch}
       className={`grid grid-cols-[1fr_auto] items-center gap-3 border-b border-border-soft px-5 py-3.5 last:border-0 hover:bg-surface-2 sm:grid-cols-[minmax(0,2.2fr)_110px_150px_90px] ${fresh ? "flash-in" : ""}`}
     >
       <span className="flex min-w-0 items-center gap-2">
@@ -81,6 +96,8 @@ export default function HomePage() {
   const recent = useQuery({
     queryKey: ["recent-transactions", cursor ?? "first"],
     queryFn: () => listRecentTransactions(PAGE_SIZE, cursor),
+    // Keep the current rows on screen while the next page loads, so paging never flashes a skeleton.
+    placeholderData: keepPreviousData,
     // Only auto-refresh the live first page -- refreshing an older page out from under someone
     // mid-read would shift its contents underneath them.
     refetchInterval: pollingFirstPage ? REFRESH_MS : false,
