@@ -269,20 +269,28 @@ export const getTariResource = () => get<ResourceResponse>("/resources/tari");
 
 // ---- Templates ----
 
+// `/templates/cached` doesn't exist on the real indexer (confirmed live: it 400s, "Failed to parse
+// substate key" -- the router treats anything after `/templates/` as a template address). The real
+// list route is `/templates/catalogue` -- every template the indexer has discovered on the network,
+// not just the handful it's configured to watch for events (that's the separate, much narrower
+// `/templates/watched`). It's cursor-paginated server-side (`limit`/`after`), capped at 100 per
+// request; there are well under 100 templates today, so one fetch at the cap gets the complete set.
 export interface CachedTemplate {
-  name: string;
-  address: string;
-  binary_sha: string;
+  template_address: string;
+  template_name: string;
   author_public_key: string;
-  code_size: number;
-  epoch: number;
+  binary_hash: string;
+  at_epoch: number;
 }
 
 export interface CachedTemplatesResponse {
-  templates: CachedTemplate[];
+  entries: CachedTemplate[];
 }
 
-export const listCachedTemplates = (limit = 50) => get<CachedTemplatesResponse>("/templates/cached", { limit });
+const CATALOGUE_FETCH_LIMIT = 100;
+
+export const listCachedTemplates = () =>
+  get<CachedTemplatesResponse>("/templates/catalogue", { limit: CATALOGUE_FETCH_LIMIT });
 
 // A template's function signature ("ABI"). `arg_type`/`output` are a recursive tagged shape:
 // a bare string for a builtin (`"U8"`, `"Unit"`, ...), `{Other:{name}}` for a named type,
@@ -302,6 +310,7 @@ export interface TemplateFunction {
 export interface TemplateDetailResponse {
   name: string;
   definition?: { V1?: { template_name: string; abi_version: number; functions: TemplateFunction[] } };
+  code_size: number;
 }
 
 export const getTemplate = (address: string) => get<TemplateDetailResponse>(`/templates/${encodeURIComponent(address)}`);

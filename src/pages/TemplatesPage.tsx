@@ -9,43 +9,33 @@ import { Pagination } from "../components/Pagination";
 import { TableRowsSkeleton } from "../components/Skeleton";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
 
-// The indexer caps `limit` at 100 server-side; there are well under 100 cached templates today,
-// so one fetch at the max gets the complete set to paginate over client-side.
-const FETCH_LIMIT = 100;
 const PAGE_SIZE = 20;
 
-function formatBytes(n: number): string {
-  if (n < 1024) return `${n} B`;
-  if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`;
-  return `${(n / (1024 * 1024)).toFixed(2)} MB`;
-}
-
-type SortKey = "epoch-desc" | "name" | "size-desc";
+type SortKey = "epoch-desc" | "name";
 
 const SORT_OPTIONS: { key: SortKey; label: string }[] = [
   { key: "epoch-desc", label: "Newest first" },
   { key: "name", label: "Name A–Z" },
-  { key: "size-desc", label: "Largest first" },
 ];
 
 export default function TemplatesPage() {
   useDocumentTitle("Templates");
-  // The indexer's `templates/cached` route only accepts `limit` -- no cursor or offset -- so
-  // there's no server-side page to ask for. Filtering/sorting/pagination all happen client-side
-  // over one larger fetch.
-  const query = useQuery({ queryKey: ["templates"], queryFn: () => listCachedTemplates(FETCH_LIMIT) });
+  // The catalogue is cursor-paginated server-side, but there are well under 100 templates today,
+  // so one fetch at the cap gets the complete set to filter/sort/paginate over client-side.
+  const query = useQuery({ queryKey: ["templates"], queryFn: () => listCachedTemplates() });
   const [search, setSearch] = useState("");
   const [sort, setSort] = useState<SortKey>("epoch-desc");
   const [page, setPage] = useState(0);
 
   const filtered = useMemo(() => {
-    const all = query.data?.templates ?? [];
+    const all = query.data?.entries ?? [];
     const q = search.trim().toLowerCase();
-    const matches = q ? all.filter((t) => t.name.toLowerCase().includes(q) || t.address.toLowerCase().includes(q)) : all;
+    const matches = q
+      ? all.filter((t) => t.template_name.toLowerCase().includes(q) || t.template_address.toLowerCase().includes(q))
+      : all;
     const sorted = [...matches];
-    if (sort === "name") sorted.sort((a, b) => a.name.localeCompare(b.name));
-    else if (sort === "size-desc") sorted.sort((a, b) => b.code_size - a.code_size);
-    else sorted.sort((a, b) => b.epoch - a.epoch);
+    if (sort === "name") sorted.sort((a, b) => a.template_name.localeCompare(b.template_name));
+    else sorted.sort((a, b) => b.at_epoch - a.at_epoch);
     return sorted;
   }, [query.data, search, sort]);
 
@@ -57,11 +47,11 @@ export default function TemplatesPage() {
     <div>
       <PageHeader
         title="Templates"
-        sub="WASM templates cached by this indexer node"
+        sub="WASM templates discovered on the network"
         actions={
           query.data ? (
             <span className="tabular text-xs text-ink-faint">
-              {filtered.length} of {query.data.templates.length}
+              {filtered.length} of {query.data.entries.length}
             </span>
           ) : undefined
         }
@@ -104,10 +94,9 @@ export default function TemplatesPage() {
       {query.isError && <ErrorBlock message={(query.error as Error).message} />}
       {query.data && (
         <Card>
-          <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,2fr)_90px_70px] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
+          <div className="hidden grid-cols-[minmax(0,1fr)_minmax(0,2fr)_70px] gap-3 border-b border-border-soft px-5 py-2.5 text-xs font-medium uppercase tracking-wide text-ink-faint sm:grid">
             <span>Name</span>
             <span>Address</span>
-            <span>Size</span>
             <span>Epoch</span>
           </div>
           {visible.length === 0 ? (
@@ -115,17 +104,16 @@ export default function TemplatesPage() {
           ) : (
             visible.map((t) => (
               <Link
-                key={t.address}
-                to={`/template/${t.address}`}
-                className="grid grid-cols-2 gap-2 border-b border-border-soft px-5 py-3.5 last:border-0 hover:bg-surface-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_90px_70px] sm:items-center sm:gap-3"
+                key={t.template_address}
+                to={`/template/${t.template_address}`}
+                className="grid grid-cols-2 gap-2 border-b border-border-soft px-5 py-3.5 last:border-0 hover:bg-surface-2 sm:grid-cols-[minmax(0,1fr)_minmax(0,2fr)_70px] sm:items-center sm:gap-3"
               >
                 <span className="flex items-center gap-2 font-medium text-ink">
-                  {t.name}
-                  <KnownAddressBadge address={t.address} />
+                  {t.template_name}
+                  <KnownAddressBadge address={t.template_address} />
                 </span>
-                <Hash value={t.address} link={false} />
-                <span className="tabular text-xs text-ink-faint">{formatBytes(t.code_size)}</span>
-                <span className="tabular text-xs text-ink-faint">{t.epoch}</span>
+                <Hash value={t.template_address} link={false} />
+                <span className="tabular text-xs text-ink-faint">{t.at_epoch}</span>
               </Link>
             ))
           )}
