@@ -1,0 +1,22 @@
+[Unit]
+Description=Veil link-preview cards (Open Graph HTML + PNG for crawlers)
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/node /opt/veil-og/og/server.js
+Environment=PORT=8793
+Environment=HOST=127.0.0.1
+Restart=on-failure
+RestartSec=5
+WorkingDirectory=/opt/veil-og
+# Unprivileged and read-only: it only fetches from the public indexer and renders images in memory.
+DynamicUser=yes
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+MemoryMax=400M
+
+[Install]
+WantedBy=multi-user.target

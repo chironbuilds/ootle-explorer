@@ -1,0 +1,30 @@
+# --- 1. At the top of /etc/nginx/sites-available/ootle-explorer, outside any server block (http context) ---
+
+# Link-unfurling crawlers get a page of <meta> tags (and a card image) from veil-og; people get the SPA.
+map $http_user_agent $veil_unfurl_bot {
+    default 0;
+    ~*(twitterbot|facebookexternalhit|slackbot|discordbot|linkedinbot|telegrambot|whatsapp|redditbot|skypeuripreview) 1;
+}
+
+# --- 2. Inside the HTTPS server block, immediately above the existing `location / { ... }` ---
+
+    # Card images, fetched by the crawler from the og:image URL.
+    location /og/ {
+        proxy_pass http://127.0.0.1:8793;
+        proxy_set_header Host $host;
+        proxy_read_timeout 20s;
+    }
+
+    # Transaction and substate pages: crawlers are handed to veil-og, everyone else falls through to
+    # the SPA exactly as the catch-all `location /` does today.
+    location ~ ^/(tx|substate)/ {
+        error_page 418 = @veil_unfurl;
+        if ($veil_unfurl_bot) { return 418; }
+        try_files /index.html =404;
+    }
+
+    location @veil_unfurl {
+        proxy_pass http://127.0.0.1:8793/unfurl$request_uri;
+        proxy_set_header Host $host;
+        proxy_read_timeout 20s;
+    }
