@@ -12,7 +12,10 @@ use tari_engine_types::{
     substate::{SubstateId, SubstateValue},
 };
 use tari_ootle_common_types::{Epoch, VotePower};
-use tari_ootle_storage::{consensus_models::CommittedBlockProof, state_store::verify_substate_value_proof_against_root};
+use tari_ootle_storage::{
+    consensus_models::{CommittedBlockProof, EpochCheckpoint},
+    state_store::verify_substate_value_proof_against_root,
+};
 use wasm_bindgen::prelude::*;
 
 #[derive(Serialize, Default)]
@@ -163,4 +166,50 @@ fn run(
         Err(e) => report.value_error = Some(e.to_string()),
     }
     report
+}
+
+#[derive(Serialize, Default)]
+struct CheckpointReport {
+    ok: bool,
+    error: Option<String>,
+    committee_size: usize,
+    quorum_threshold: u64,
+    epoch: Option<u64>,
+    height: Option<u64>,
+    state_merkle_root: Option<String>,
+}
+
+/// Validates an epoch checkpoint exactly as validators do when syncing (`EpochCheckpoint::validate`):
+/// the end-of-epoch command is in the block, the QCs carry a quorum of the committee, the 3-chain rule
+/// holds, and the shard roots hash to the header's state merkle root. `checkpoint_json` is the
+/// indexer's `checkpoint` object verbatim.
+#[wasm_bindgen]
+pub fn verify_checkpoint(checkpoint_json: &str, committee_hex: Vec<String>) -> Result<JsValue, JsValue> {
+    let mut report = CheckpointReport::default();
+    let committee: HashSet<Vec<u8>> = committee_hex.iter().filter_map(|h| hex::decode(h).ok()).collect();
+    let n = committee.len() as u64;
+    let threshold = if n == 0 { 0 } else { n - (n - 1) / 3 };
+    report.committee_size = committee.len();
+    report.quorum_threshold = threshold;
+
+    match serde_json::from_str::<EpochCheckpoint>(checkpoint_json) {
+        Err(e) => report.error = Some(format!("could not read the checkpoint: {e}")),
+        Ok(cp) => {
+            report.epoch = Some(cp.epoch().as_u64());
+            report.height = Some(cp.header().height);
+            report.state_merkle_root = Some(hex::encode(cp.header().state_merkle_root.as_slice()));
+            match cp.validate(cp.epoch(), VotePower::of(threshold), |pk| {
+                Ok(if committee.contains(pk.as_slice()) {
+                    VotePower::of(1)
+                } else {
+                    VotePower::zero()
+                })
+            }) {
+                Ok(()) => report.ok = true,
+                Err(e) => report.error = Some(e.to_string()),
+            }
+        },
+    }
+    let s = serde_json::to_string(&report).map_err(|e| JsValue::from_str(&e.to_string()))?;
+    Ok(JsValue::from_str(&s))
 }

@@ -2,6 +2,14 @@
 /* eslint-disable */
 
 /**
+ * Validates an epoch checkpoint exactly as validators do when syncing (`EpochCheckpoint::validate`):
+ * the end-of-epoch command is in the block, the QCs carry a quorum of the committee, the 3-chain rule
+ * holds, and the shard roots hash to the header's state merkle root. `checkpoint_json` is the
+ * indexer's `checkpoint` object verbatim.
+ */
+export function verify_checkpoint(checkpoint_json: string, committee_hex: string[]): any;
+
+/**
  * `committee_hex`: hex public keys of the shard group committee at the proof's epoch (1 vote each).
  * `value_json`: the substate value exactly as the indexer served it (`substate` field).
  */
@@ -11,6 +19,7 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
+    readonly verify_checkpoint: (a: number, b: number, c: number, d: number) => [number, number, number];
     readonly verify_proof: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: bigint, l: number, m: number) => [number, number, number];
     readonly tari_free: (a: number) => void;
     readonly tari_alloc: (a: number) => number;

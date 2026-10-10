@@ -16,6 +16,7 @@ import { deriveOutcomeFromResult } from "../lib/transactionOutcome";
 import { useDocumentTitle, shortHash } from "../lib/useDocumentTitle";
 import { ShareButton } from "../components/ShareButton";
 import { TxSummary } from "../components/TxSummary";
+import { SubstateProofCard } from "../components/SubstateProofCard";
 import { BurnFlame } from "../components/BurnFlame";
 import { useIsBurnTx } from "../lib/useBurnTx";
 
@@ -298,6 +299,14 @@ export default function TransactionPage() {
           <InstructionList instructions={body.feeInstructions} empty="No fee instructions." />
         </Card>
       </div>
+
+      {outcome === "Commit" && (
+        <SubstateProofCard
+          id={`txreceipt_${id}`}
+          heading="Proof of commit"
+          intro="Prove this transaction was committed: load the merkle proof for its receipt and check, in your browser, that the committee signed a block containing it."
+        />
+      )}
 
       <div className="mb-8">
         <SectionLabel>Instructions ({body.instructions.length})</SectionLabel>

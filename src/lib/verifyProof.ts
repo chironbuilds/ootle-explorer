@@ -1,4 +1,44 @@
-import { getNetworkInfo, listValidators, type SubstateProof } from "./indexer";
+import { getNetworkInfo, listValidators, type SubstateProof, type Validator } from "./indexer";
+
+/** Public keys of the validators that sat on a shard group's committee at `epoch` (1 vote each). */
+function committeeAt(validators: Validator[], shardGroup: { start: number; end_inclusive: number }, epoch: number): string[] {
+  return validators
+    .filter(
+      (v) =>
+        v.shard_group.start === shardGroup.start &&
+        v.shard_group.end_inclusive === shardGroup.end_inclusive &&
+        v.start_epoch <= epoch &&
+        (v.end_epoch === null || v.end_epoch >= epoch),
+    )
+    .map((v) => v.public_key);
+}
+
+export interface CheckpointVerification {
+  ok: boolean;
+  error: string | null;
+  committeeSize: number;
+  quorumThreshold: number;
+}
+
+/** Validates an epoch checkpoint in the browser with the validators' own `EpochCheckpoint::validate`
+ * (same WebAssembly module as the substate proofs): the end-of-epoch command is in the block, a
+ * quorum of the committee signed the QC chain, the 3-chain rule holds, and the shard roots hash to the
+ * header's state root. The committee's keys come from this indexer's validator list. */
+export async function verifyEpochCheckpoint(
+  checkpoint: unknown,
+  header: { epoch: number; shard_group: { start: number; end_inclusive: number } },
+): Promise<CheckpointVerification> {
+  const [wasm, validators] = await Promise.all([import("./proofWasm/proof_verify_wasm.js"), listValidators(500)]);
+  await wasm.default();
+  const committee = committeeAt(validators.validators, header.shard_group, header.epoch);
+  const raw = JSON.parse(wasm.verify_checkpoint(JSON.stringify(checkpoint), committee)) as {
+    ok: boolean;
+    error: string | null;
+    committee_size: number;
+    quorum_threshold: number;
+  };
+  return { ok: raw.ok, error: raw.error, committeeSize: raw.committee_size, quorumThreshold: raw.quorum_threshold };
+}
 
 export interface ProofVerification {
   commitOk: boolean;
@@ -47,15 +87,7 @@ export async function verifySubstateProof(
   await wasm.default();
 
   const { anchor } = proof;
-  const committee = validators.validators
-    .filter(
-      (v) =>
-        v.shard_group.start === anchor.shard_group.start &&
-        v.shard_group.end_inclusive === anchor.shard_group.end_inclusive &&
-        v.start_epoch <= anchor.epoch &&
-        (v.end_epoch === null || v.end_epoch >= anchor.epoch),
-    )
-    .map((v) => v.public_key);
+  const committee = committeeAt(validators.validators, anchor.shard_group, anchor.epoch);
 
   const raw = JSON.parse(
     wasm.verify_proof(

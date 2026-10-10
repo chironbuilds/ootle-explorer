@@ -1,5 +1,7 @@
 # proof_verify_wasm
 
+Exports `verify_proof` (substate and transaction-receipt proofs) and `verify_checkpoint` (epoch checkpoints).
+
 Source of the WebAssembly module in `src/lib/proofWasm/` that powers the "Verify proof" button on the
 substate page. It wraps the indexer's own verification code from
 [tari-ootle](https://github.com/tari-project/tari-ootle) so the browser runs the same checks.

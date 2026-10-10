@@ -68,7 +68,15 @@ function VerificationResult({ result }: { result: ProofVerification }) {
  * shard group -- with the raw blobs downloadable for an independent verifier. This page doesn't
  * re-verify the proof itself: that needs the committee for the anchor's epoch, so the card says
  * what the indexer vouches for rather than implying more. */
-export function SubstateProofCard({ id }: { id: string }) {
+export function SubstateProofCard({
+  id,
+  heading = "Proof of inclusion",
+  intro = "This value was checked against the committee. Load the merkle proof that ties it to a block the committee committed.",
+}: {
+  id: string;
+  heading?: string;
+  intro?: string;
+}) {
   const [requested, setRequested] = useState(false);
   const query = useQuery({
     queryKey: ["substate-proof", id],
@@ -95,12 +103,10 @@ export function SubstateProofCard({ id }: { id: string }) {
 
   return (
     <div className="mb-8">
-      <SectionLabel>Proof of inclusion</SectionLabel>
+      <SectionLabel>{heading}</SectionLabel>
       {!requested ? (
         <Card className="flex flex-wrap items-center justify-between gap-3 px-5 py-4">
-          <p className="max-w-xl text-sm text-ink-dim">
-            This value was checked against the committee. Load the merkle proof that ties it to a block the committee committed.
-          </p>
+          <p className="max-w-xl text-sm text-ink-dim">{intro}</p>
           <button
             onClick={() => setRequested(true)}
             className="rounded-lg border border-border bg-surface px-3 py-2 text-xs font-medium text-ink-dim transition-colors hover:border-accent-dim hover:text-ink"

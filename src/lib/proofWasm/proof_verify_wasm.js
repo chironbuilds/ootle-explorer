@@ -1,6 +1,27 @@
 /* @ts-self-types="./proof_verify_wasm.d.ts" */
 
 /**
+ * Validates an epoch checkpoint exactly as validators do when syncing (`EpochCheckpoint::validate`):
+ * the end-of-epoch command is in the block, the QCs carry a quorum of the committee, the 3-chain rule
+ * holds, and the shard roots hash to the header's state merkle root. `checkpoint_json` is the
+ * indexer's `checkpoint` object verbatim.
+ * @param {string} checkpoint_json
+ * @param {string[]} committee_hex
+ * @returns {any}
+ */
+export function verify_checkpoint(checkpoint_json, committee_hex) {
+    const ptr0 = passStringToWasm0(checkpoint_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+    const len0 = WASM_VECTOR_LEN;
+    const ptr1 = passArrayJsValueToWasm0(committee_hex, wasm.__wbindgen_malloc);
+    const len1 = WASM_VECTOR_LEN;
+    const ret = wasm.verify_checkpoint(ptr0, len0, ptr1, len1);
+    if (ret[2]) {
+        throw takeFromExternrefTable0(ret[1]);
+    }
+    return takeFromExternrefTable0(ret[0]);
+}
+
+/**
  * `committee_hex`: hex public keys of the shard group committee at the proof's epoch (1 vote each).
  * `value_json`: the substate value exactly as the indexer served it (`substate` field).
  * @param {string} substate_id
