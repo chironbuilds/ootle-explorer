@@ -1,11 +1,12 @@
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, lazy, useEffect, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useQuery } from "@tanstack/react-query";
 import { getIdentity, getNetworkInfo } from "../lib/indexer";
 import { SearchBar } from "./SearchBar";
 import { Hash } from "./Hash";
 import { ErrorBoundary } from "./ErrorBoundary";
-import { CommandPalette } from "./CommandPalette";
+// Loaded on first open (Ctrl/Cmd+K): the palette and its address-decoding deps stay out of the first-load bundle.
+const CommandPalette = lazy(() => import("./CommandPalette").then((m) => ({ default: m.CommandPalette })));
 import { ThemeToggle } from "./ThemeToggle";
 
 function Logo() {
@@ -89,7 +90,11 @@ export function Layout() {
 
   return (
     <div className="min-h-screen bg-ground">
-      {paletteOpen && <CommandPalette onClose={() => setPaletteOpen(false)} />}
+      {paletteOpen && (
+        <Suspense fallback={null}>
+          <CommandPalette onClose={() => setPaletteOpen(false)} />
+        </Suspense>
+      )}
 
       <header className="sticky top-0 z-20 border-b border-border-soft bg-ground/85 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center gap-4 px-5 py-3.5 lg:gap-6">

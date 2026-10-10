@@ -4,7 +4,6 @@ import { useQueryClient } from "@tanstack/react-query";
 import { getTemplate, getTransaction, listCachedTemplates } from "../lib/indexer";
 import { KNOWN_ADDRESSES } from "../lib/knownAddresses";
 import { linkForId } from "../lib/links";
-import { componentAddressFromOtlAddress } from "../lib/ootleAddress";
 
 export function SearchBar({ className = "" }: { className?: string }) {
   const [value, setValue] = useState("");
@@ -63,7 +62,9 @@ export function SearchBar({ className = "" }: { className?: string }) {
     // An otl_... wallet address isn't itself a substate id -- it's the input a search box
     // realistically sees, so it's resolved here (to the account it derives) rather than in
     // linkForId, which every hash rendered anywhere in raw JSON also runs through.
-    const componentAddress = componentAddressFromOtlAddress(trimmed);
+    // The bech32/blake2 code behind otl_ addresses is only fetched when someone actually pastes one,
+    // keeping it out of the first-load bundle.
+    const componentAddress = trimmed.startsWith("otl_") ? (await import("../lib/ootleAddress")).componentAddressFromOtlAddress(trimmed) : null;
     let target = linkForId(trimmed) ?? (componentAddress ? `/substate/${componentAddress}` : null);
     if (!target) {
       setBusy(true);
