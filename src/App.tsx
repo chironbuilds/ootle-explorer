@@ -10,6 +10,7 @@ const loadTemplatePage = () => import("./pages/TemplatePage");
 const loadValidatorsPage = () => import("./pages/ValidatorsPage");
 const loadL1SupplyPage = () => import("./pages/L1SupplyPage");
 const loadEventsPage = () => import("./pages/EventsPage");
+const loadBadgePage = () => import("./pages/BadgePage");
 
 /** Fetches every page chunk during idle time so navigating anywhere after first paint is instant
  * instead of waiting on a network round trip for the page's code. */
@@ -22,6 +23,7 @@ export function preloadRoutes() {
     loadValidatorsPage,
     loadL1SupplyPage,
     loadEventsPage,
+    loadBadgePage,
   ];
   for (const load of loaders) void load();
 }
@@ -33,6 +35,7 @@ const TemplatePage = lazy(loadTemplatePage);
 const ValidatorsPage = lazy(loadValidatorsPage);
 const L1SupplyPage = lazy(loadL1SupplyPage);
 const EventsPage = lazy(loadEventsPage);
+const BadgePage = lazy(loadBadgePage);
 
 export default function App() {
   return (
@@ -46,6 +49,8 @@ export default function App() {
         <Route path="validators" element={<ValidatorsPage />} />
         <Route path="l1-supply" element={<L1SupplyPage />} />
         <Route path="events" element={<EventsPage />} />
+        {/* Not "/badge": the static badge images live under /badge/, and nginx would redirect a bare /badge there. */}
+        <Route path="verified-badge" element={<BadgePage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
     </Routes>

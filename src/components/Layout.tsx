@@ -170,6 +170,13 @@ export function Layout() {
           . Independent, unofficial project.
         </p>
         <p className="mt-2">
+          Building on Ootle?{" "}
+          <NavLink to="/verified-badge" className="text-ink-dim hover:text-accent">
+            Get the Verified on Veil badge
+          </NavLink>
+          .
+        </p>
+        <p className="mt-2">
           Press{" "}
           <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px]">⌘K</kbd> or{" "}
           <kbd className="rounded border border-border bg-surface px-1.5 py-0.5 font-mono text-[10px]">/</kbd> anywhere to search.
