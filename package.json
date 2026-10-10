@@ -12,6 +12,9 @@
   },
   "dependencies": {
     "@chironbuilder/ootle-sdk": "^0.1.16",
+    "@fontsource-variable/bricolage-grotesque": "^5.3.0",
+    "@fontsource/ibm-plex-mono": "^5.3.0",
+    "@fontsource/ibm-plex-sans": "^5.3.0",
     "@grpc/grpc-js": "^1.14.4",
     "@grpc/proto-loader": "^0.8.1",
     "@noble/hashes": "^2.3.0",

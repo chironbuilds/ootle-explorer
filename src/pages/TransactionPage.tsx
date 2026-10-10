@@ -15,6 +15,8 @@ import { describeSpendAuthorization, formatUtxoTag } from "../lib/utxo";
 import { deriveOutcomeFromResult } from "../lib/transactionOutcome";
 import { useDocumentTitle, shortHash } from "../lib/useDocumentTitle";
 import { ShareButton } from "../components/ShareButton";
+import { BurnFlame } from "../components/BurnFlame";
+import { useIsBurnTx } from "../lib/useBurnTx";
 
 /** Recursively finds the first array at a field named `key` -- the result envelope's exact
  * nesting (Finalized/Commit/Reject wrapping) varies more than is worth hand-modeling here. */
@@ -142,6 +144,19 @@ function UtxoSection({ upSubstates, downSubstates }: { upSubstates: [string, unk
   );
 }
 
+/** Header tag for burn transactions. Its own component because the burn check is a hook and this
+ * page returns early while loading. */
+function BurnTag({ body }: { body: ReturnType<typeof readTxBody> }) {
+  const burn = useIsBurnTx(body);
+  if (!burn) return null;
+  return (
+    <span className="inline-flex items-center gap-1.5 rounded-full bg-reveal/10 px-2.5 py-1 text-xs font-medium text-reveal">
+      <BurnFlame size={16} />
+      Burn
+    </span>
+  );
+}
+
 export default function TransactionPage() {
   const { id = "" } = useParams();
   useDocumentTitle(`Transaction ${shortHash(id)}`);
@@ -205,6 +220,7 @@ export default function TransactionPage() {
         sub="Transaction"
         actions={
           <div className="flex items-center gap-2">
+            <BurnTag body={body} />
             <VeilBadge veiled={stealth} />
             <StatusPill outcome={outcome} />
             <ShareButton path={`/tx/${id}`} />
