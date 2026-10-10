@@ -192,6 +192,25 @@ export interface SubstateResponse {
   [key: string]: unknown;
 }
 
+// The proof an indexer verified a substate with (only returned when `include_proof` is set, and only
+// by an indexer with proof verification on). `commit_proof` and `value_proof` are base64 CBOR blobs
+// for an independent verifier; the anchor is the plain-JSON summary read out of the commit proof.
+export interface SubstateProof {
+  anchor: {
+    epoch: number;
+    shard_group: { start: number; end_inclusive: number };
+    height: number;
+    block_id: string;
+    state_merkle_root: string;
+  };
+  commit_proof: string;
+  value_proof: string;
+  value_hash_epoch: number;
+}
+
+export const getSubstateWithProof = (id: string) =>
+  get<SubstateResponse & { proof?: SubstateProof }>(`/substates/${encodeURIComponent(id)}`, { include_proof: "true" });
+
 export const getSubstate = (id: string, version?: number) =>
   get<SubstateResponse>(`/substates/${encodeURIComponent(id)}`, version !== undefined ? { version } : undefined);
 

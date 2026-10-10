@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { listCachedTemplates } from "../lib/indexer";
 import { Card, ErrorBlock, PageHeader } from "../components/ui";
 import { Hash } from "../components/Hash";
@@ -23,7 +23,8 @@ export default function TemplatesPage() {
   // The catalogue is cursor-paginated server-side, but there are well under 100 templates today,
   // so one fetch at the cap gets the complete set to filter/sort/paginate over client-side.
   const query = useQuery({ queryKey: ["templates"], queryFn: () => listCachedTemplates() });
-  const [search, setSearch] = useState("");
+  const [params] = useSearchParams();
+  const [search, setSearch] = useState(params.get("q") ?? "");
   const [sort, setSort] = useState<SortKey>("epoch-desc");
   const [page, setPage] = useState(0);
 

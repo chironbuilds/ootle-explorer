@@ -1,18 +1,21 @@
+import { lazy, Suspense } from "react";
 import { Route, Routes } from "react-router-dom";
 import { Layout } from "./components/Layout";
+import { LoadingBlock } from "./components/ui";
 import HomePage from "./pages/HomePage";
-import TransactionPage from "./pages/TransactionPage";
-import SubstatePage from "./pages/SubstatePage";
-import TemplatesPage from "./pages/TemplatesPage";
-import TemplatePage from "./pages/TemplatePage";
-import ValidatorsPage from "./pages/ValidatorsPage";
-import L1SupplyPage from "./pages/L1SupplyPage";
-import EventsPage from "./pages/EventsPage";
+const TransactionPage = lazy(() => import("./pages/TransactionPage"));
+const SubstatePage = lazy(() => import("./pages/SubstatePage"));
+const TemplatesPage = lazy(() => import("./pages/TemplatesPage"));
+const TemplatePage = lazy(() => import("./pages/TemplatePage"));
+const ValidatorsPage = lazy(() => import("./pages/ValidatorsPage"));
+const L1SupplyPage = lazy(() => import("./pages/L1SupplyPage"));
+const EventsPage = lazy(() => import("./pages/EventsPage"));
 import NotFoundPage from "./pages/NotFoundPage";
 
 export default function App() {
   return (
-    <Routes>
+    <Suspense fallback={<LoadingBlock />}>
+      <Routes>
       <Route element={<Layout />}>
         <Route index element={<HomePage />} />
         <Route path="tx/:id" element={<TransactionPage />} />
@@ -24,6 +27,7 @@ export default function App() {
         <Route path="events" element={<EventsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Route>
-    </Routes>
+      </Routes>
+    </Suspense>
   );
 }

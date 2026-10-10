@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
 import { getSubstate } from "../lib/indexer";
+import { SubstateProofCard } from "../components/SubstateProofCard";
 import { substateKind } from "../lib/format";
 import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader } from "../components/ui";
 import { Hash } from "../components/Hash";
@@ -134,6 +135,7 @@ export default function SubstatePage() {
                 </Card>
               ) : null;
             })()}
+          {query.data.verified && <SubstateProofCard id={id} />}
           {kind === "component" && <VaultBalances componentState={readComponentState(query.data)} />}
           {kind === "component" && <ComponentActivity componentAddress={id} componentState={readComponentState(query.data)} />}
           {kind === "resource" &&
