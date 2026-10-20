@@ -95,7 +95,7 @@ export interface EpochCheckpointResponse {
     // Versioned like `TemplateDetailResponse.definition`; modeled optional so a future non-V1 proof
     // degrades to "no checkpoint shown" instead of crashing, the same failure mode `proof_elements`
     // hit above.
-    proof: {
+    proof?: {
       V1?: {
         commit_proof: {
           header: {
@@ -208,11 +208,24 @@ export interface SubstateProof {
   value_hash_epoch: number;
 }
 
+// Ootle 0.47 nests a substate's value + version under `state.up` (a current/up substate) or
+// `state.down` (a consumed one), where earlier releases returned `{ substate, version }` at the top
+// level. Flatten the new shape back to the fields every reader here already expects, so both the
+// pre- and post-0.47 indexer responses render identically.
+function normalizeSubstate<T extends SubstateResponse>(data: T): T {
+  const state = (data as { state?: { up?: { substate?: unknown; version?: number }; down?: { substate?: unknown; version?: number } } }).state;
+  const entry = state?.up ?? state?.down;
+  if (entry && data.substate === undefined) {
+    return { ...data, substate: entry.substate, version: data.version ?? entry.version };
+  }
+  return data;
+}
+
 export const getSubstateWithProof = (id: string) =>
-  get<SubstateResponse & { proof?: SubstateProof }>(`/substates/${encodeURIComponent(id)}`, { include_proof: "true" });
+  get<SubstateResponse & { proof?: SubstateProof }>(`/substates/${encodeURIComponent(id)}`, { include_proof: "true" }).then(normalizeSubstate);
 
 export const getSubstate = (id: string, version?: number) =>
-  get<SubstateResponse>(`/substates/${encodeURIComponent(id)}`, version !== undefined ? { version } : undefined);
+  get<SubstateResponse>(`/substates/${encodeURIComponent(id)}`, version !== undefined ? { version } : undefined).then(normalizeSubstate);
 
 // POST since it takes a body, not because it mutates anything -- fetches up to 20 substates in one
 // round trip instead of one request each. Each entry has the same {substate, version} shape as a
