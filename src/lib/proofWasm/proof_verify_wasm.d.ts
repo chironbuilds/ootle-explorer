@@ -2,16 +2,22 @@
 /* eslint-disable */
 
 /**
+ * Decodes a base64 CBOR epoch checkpoint (Ootle 0.48+) to the JSON shape earlier indexers served.
+ */
+export function decode_checkpoint(checkpoint_b64: string): string;
+
+/**
  * Validates an epoch checkpoint exactly as validators do when syncing (`EpochCheckpoint::validate`):
  * the end-of-epoch command is in the block, the QCs carry a quorum of the committee, the 3-chain rule
  * holds, and the shard roots hash to the header's state merkle root. `checkpoint_json` is the
- * indexer's `checkpoint` object verbatim.
+ * indexer's `checkpoint` field verbatim: base64 CBOR from Ootle 0.48, a JSON object before.
  */
-export function verify_checkpoint(checkpoint_json: string, committee_hex: string[]): any;
+export function verify_checkpoint(checkpoint_json: string, network_byte: number, committee_hex: string[]): any;
 
 /**
  * `committee_hex`: hex public keys of the shard group committee at the proof's epoch (1 vote each).
- * `value_json`: the substate value exactly as the indexer served it (`substate` field).
+ * `value_json`: the substate value exactly as the indexer served it (`substate` field): base64 CBOR
+ * from Ootle 0.48, serde JSON before.
  */
 export function verify_proof(substate_id: string, version: number, value_json: string, commit_proof_b64: string, value_proof_b64: string, network_byte: number, value_hash_epoch: bigint, committee_hex: string[]): any;
 
@@ -19,15 +25,17 @@ export type InitInput = RequestInfo | URL | Response | BufferSource | WebAssembl
 
 export interface InitOutput {
     readonly memory: WebAssembly.Memory;
-    readonly verify_checkpoint: (a: number, b: number, c: number, d: number) => [number, number, number];
+    readonly decode_checkpoint: (a: number, b: number) => [number, number, number, number];
+    readonly verify_checkpoint: (a: number, b: number, c: number, d: number, e: number) => [number, number, number];
     readonly verify_proof: (a: number, b: number, c: number, d: number, e: number, f: number, g: number, h: number, i: number, j: number, k: bigint, l: number, m: number) => [number, number, number];
     readonly tari_free: (a: number) => void;
     readonly tari_alloc: (a: number) => number;
     readonly __wbindgen_malloc: (a: number, b: number) => number;
     readonly __wbindgen_realloc: (a: number, b: number, c: number, d: number) => number;
     readonly __wbindgen_externrefs: WebAssembly.Table;
-    readonly __externref_table_alloc: () => number;
     readonly __externref_table_dealloc: (a: number) => void;
+    readonly __wbindgen_free: (a: number, b: number, c: number) => void;
+    readonly __externref_table_alloc: () => number;
     readonly __wbindgen_start: () => void;
 }
 

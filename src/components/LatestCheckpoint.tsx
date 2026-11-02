@@ -1,5 +1,5 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { getLatestEpochCheckpoint } from "../lib/indexer";
+import { getLatestEpochCheckpoint, listValidators, type QuorumCertificate } from "../lib/indexer";
 import { Card, SectionLabel, Badge } from "./ui";
 import { Hash } from "./Hash";
 import { verifyEpochCheckpoint } from "../lib/verifyProof";
@@ -15,19 +15,33 @@ export function LatestCheckpoint() {
   const elements = query.data?.checkpoint.proof?.V1?.commit_proof.proof_elements ?? [];
 
   const verify = useMutation({
-    mutationFn: () => verifyEpochCheckpoint(query.data!.checkpoint, header!),
+    mutationFn: () => verifyEpochCheckpoint(query.data!.raw ?? query.data!.checkpoint, header!),
   });
+  const validators = useQuery({ queryKey: ["validators", 500], queryFn: () => listValidators(500), staleTime: 60_000, enabled: !!header });
 
   if (!header) return null;
 
+  // The committee in key order, which is what an Ootle 0.48+ QC's signer bitmap indexes.
+  const committee = (validators.data?.validators ?? [])
+    .filter(
+      (v) =>
+        v.shard_group.start === header.shard_group.start &&
+        v.shard_group.end_inclusive === header.shard_group.end_inclusive &&
+        v.start_epoch <= header.epoch &&
+        (v.end_epoch === null || v.end_epoch >= header.epoch),
+    )
+    .map((v) => v.public_key)
+    .sort();
+  const signerKeys = (qc: QuorumCertificate): string[] => {
+    if (Array.isArray(qc.signatures)) return qc.signatures.map((s) => s.public_key);
+    const bitmap = qc.signatures.Schnorr.signers.match(/../g) ?? [];
+    return committee.filter((_, i) => (parseInt(bitmap[i >> 3] ?? "0", 16) >> (i & 7)) & 1);
+  };
   const signers = [
-    ...new Map(
-      elements
-        .filter((e) => e.QuorumCertificate?.decision === "Accept")
-        .flatMap((e) => e.QuorumCertificate!.signatures)
-        .map((s) => [s.public_key, s] as const),
-    ).values(),
-  ];
+    ...new Set(
+      elements.filter((e) => e.QuorumCertificate?.decision === "Accept").flatMap((e) => signerKeys(e.QuorumCertificate!)),
+    ),
+  ].map((public_key) => ({ public_key }));
 
   return (
     <div className="mb-8">

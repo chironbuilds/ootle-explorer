@@ -8,6 +8,8 @@
 // space is large and still evolving, and a generic viewer is also just how explorers usually
 // present raw call data.
 
+import { decodeEvent, decodeExecuteResult, decodeResource, decodeSubstateValue, decodeTransactionReceipt } from "./bor";
+
 export const INDEXER_URL = import.meta.env.VITE_INDEXER_URL ?? "https://ootle-indexer-a.tari.com";
 
 export class IndexerError extends Error {
@@ -87,7 +89,9 @@ export const getIdentity = () => get<IdentityInfo>("/identity");
 // checkpoint header and the quorum certificates that committed it are narrowly typed below.
 export interface QuorumCertificate {
   decision: string;
-  signatures: { public_key: string }[];
+  /** Before Ootle 0.48: one entry per signer. From 0.48: a bitmap (hex, least significant bit first)
+   * over the committee sorted by public key, beside the signatures it selects. */
+  signatures: { public_key: string }[] | { Schnorr: { signers: string; signatures: unknown[] } };
 }
 
 export interface EpochCheckpointResponse {
@@ -115,7 +119,17 @@ export interface EpochCheckpointResponse {
   };
 }
 
-export const getLatestEpochCheckpoint = () => get<EpochCheckpointResponse>("/epoch-checkpoints/latest");
+/** From Ootle 0.48 `checkpoint.checkpoint` is the whole `EpochCheckpoint` as base64 CBOR (beside a
+ * few summary fields) instead of the checkpoint object itself. It is decoded with the proof verifier's
+ * wasm, the only module here that knows the type, and the encoded form kept in `raw` for verification. */
+export async function getLatestEpochCheckpoint(): Promise<EpochCheckpointResponse & { raw?: string }> {
+  const data = await get<{ checkpoint: EpochCheckpointResponse["checkpoint"] & { checkpoint?: unknown } }>("/epoch-checkpoints/latest");
+  const encoded = data.checkpoint?.checkpoint;
+  if (typeof encoded !== "string") return data;
+  const wasm = await import("./proofWasm/proof_verify_wasm.js");
+  await wasm.default();
+  return { checkpoint: JSON.parse(wasm.decode_checkpoint(encoded)), raw: encoded };
+}
 
 // ---- Validators ----
 
@@ -173,7 +187,16 @@ export interface TransactionResultResponse {
   error?: string;
 }
 
-export const getTransactionResult = (id: string) => get<TransactionResultResponse>(`/transactions/${encodeURIComponent(id)}/result`);
+// From Ootle 0.48 `Finalized.execution_result` is a base64 CBOR `ExecuteResult` (it was serde JSON).
+// Decoded back to the old shape here so transactionOutcome.ts and the transaction page read either.
+async function normalizeResult(data: TransactionResultResponse): Promise<TransactionResultResponse> {
+  const finalized = (data.result as { Finalized?: { execution_result?: unknown } } | undefined)?.Finalized;
+  if (typeof finalized?.execution_result !== "string") return data;
+  return { ...data, result: { ...(data.result as object), Finalized: { ...finalized, execution_result: await decodeExecuteResult(finalized.execution_result) } } };
+}
+
+export const getTransactionResult = (id: string) =>
+  get<TransactionResultResponse>(`/transactions/${encodeURIComponent(id)}/result`).then(normalizeResult);
 
 // ---- Substates ----
 
@@ -189,6 +212,9 @@ export interface SubstateResponse {
   // it does NOT mean "freshly re-proven for this request": Ootle can satisfy the check from a
   // previously-trusted committee state root rather than re-running a fresh proof every time.
   verified?: boolean;
+  /** The value exactly as the indexer served it (base64 CBOR from Ootle 0.48), kept so a proof can
+   * be checked against the bytes the committee hashed rather than a JSON round trip of them. */
+  raw_substate?: unknown;
   [key: string]: unknown;
 }
 
@@ -212,11 +238,13 @@ export interface SubstateProof {
 // `state.down` (a consumed one), where earlier releases returned `{ substate, version }` at the top
 // level. Flatten the new shape back to the fields every reader here already expects, so both the
 // pre- and post-0.47 indexer responses render identically.
-function normalizeSubstate<T extends SubstateResponse>(data: T): T {
+// From Ootle 0.48 the value itself (`state.up.substate`) is a base64 CBOR `SubstateValue` instead of
+// serde JSON; `decodeSubstateValue` passes the old JSON form through untouched.
+async function normalizeSubstate<T extends SubstateResponse>(data: T): Promise<T> {
   const state = (data as { state?: { up?: { substate?: unknown; version?: number }; down?: { substate?: unknown; version?: number } } }).state;
   const entry = state?.up ?? state?.down;
   if (entry && data.substate === undefined) {
-    return { ...data, substate: entry.substate, version: data.version ?? entry.version };
+    return { ...data, substate: await decodeSubstateValue(entry.substate), raw_substate: entry.substate, version: data.version ?? entry.version };
   }
   return data;
 }
@@ -239,8 +267,18 @@ export interface FetchSubstatesResponse {
 // confirmed live (a 21st id gets rejected), so callers with more ids than that must chunk.
 export const MAX_BATCH_SUBSTATES = 20;
 
+// From Ootle 0.48 each entry is `{ version, value }` with `value` a base64 CBOR `SubstateValue`;
+// earlier indexers sent `{ substate, version }`. Both are folded into the old shape here.
 export const fetchSubstates = (ids: string[]) =>
-  post<FetchSubstatesResponse>("/substates/fetch", { requests: ids, cached_only: false });
+  post<{ substates: Record<string, { substate?: unknown; value?: unknown; version: number }> }>("/substates/fetch", {
+    requests: ids,
+    cached_only: false,
+  }).then(async (res): Promise<FetchSubstatesResponse> => {
+    const entries = await Promise.all(
+      Object.entries(res.substates).map(async ([id, e]) => [id, { substate: await decodeSubstateValue(e.value ?? e.substate), version: e.version }] as const),
+    );
+    return { substates: Object.fromEntries(entries) };
+  });
 
 /** Dedupes and pages through {@link fetchSubstates} in {@link MAX_BATCH_SUBSTATES}-sized batches so
  * callers can pass an arbitrarily long id list without hand-rolling chunking. For the common case
@@ -277,7 +315,7 @@ export interface VaultSubstateResponse {
   substate: { Vault: { resource_container: ResourceContainer; freeze_flags: number } };
 }
 
-export const getVault = (id: string) => get<VaultSubstateResponse>(`/substates/${encodeURIComponent(id)}`);
+export const getVault = (id: string) => get<VaultSubstateResponse & SubstateResponse>(`/substates/${encodeURIComponent(id)}`).then(normalizeSubstate) as Promise<VaultSubstateResponse>;
 
 // ---- Resources ----
 
@@ -296,8 +334,14 @@ export interface ResourceResponse {
   total_supply: string | null;
 }
 
-export const getResource = (address: string) => get<ResourceResponse>(`/resources/${encodeURIComponent(address)}`);
-export const getTariResource = () => get<ResourceResponse>("/resources/tari");
+// From Ootle 0.48 `resource` is a base64 CBOR `Resource` (it was serde JSON).
+const normalizeResource = async (data: ResourceResponse): Promise<ResourceResponse> => ({
+  ...data,
+  resource: await decodeResource<ResourceResponse["resource"]>(data.resource),
+});
+
+export const getResource = (address: string) => get<ResourceResponse>(`/resources/${encodeURIComponent(address)}`).then(normalizeResource);
+export const getTariResource = () => get<ResourceResponse>("/resources/tari").then(normalizeResource);
 
 // ---- Templates ----
 
@@ -381,7 +425,11 @@ export interface TransactionReceiptResponse {
   };
 }
 
-export const getTransactionReceipt = (id: string) => get<TransactionReceiptResponse>(`/transaction-receipts/${encodeURIComponent(id)}`);
+// From Ootle 0.48 `receipt` is a base64 CBOR `TransactionReceipt` (it was serde JSON).
+export const getTransactionReceipt = (id: string) =>
+  get<TransactionReceiptResponse>(`/transaction-receipts/${encodeURIComponent(id)}`).then(
+    async (data): Promise<TransactionReceiptResponse> => ({ ...data, receipt: await decodeTransactionReceipt<TransactionReceiptResponse["receipt"]>(data.receipt) }),
+  );
 
 /** `resource_address` matches an event either by substate id (std.resource.* events, e.g. mint/burn,
  * where the resource itself is the event's subject) or by a `resource_address` field in the payload
@@ -403,8 +451,17 @@ export const queryTransactionEvents = (params: {
     topic: params.topic,
     limit: params.limit ?? 25,
     offset: params.offset ?? 0,
-  });
+  }).then(
+    // From Ootle 0.48 each event (`events[i][1]`) is a base64 CBOR `Event` (it was serde JSON).
+    async (data): Promise<QueryTransactionEventsResponse> => ({
+      ...data,
+      events: await Promise.all(data.events.map(async ([txId, ev]) => [txId, await decodeEvent<TransactionEvent>(ev)] as [string, TransactionEvent])),
+    }),
+  );
 
 // ---- Transaction receipts ----
 
-export const listTransactionReceipts = (limit = 25) => get<unknown>("/transaction-receipts", { limit });
+export const listTransactionReceipts = (limit = 25) =>
+  get<{ receipts?: Array<[string, unknown]> }>("/transaction-receipts", { limit }).then(async (data) =>
+    data.receipts ? { ...data, receipts: await Promise.all(data.receipts.map(async ([id, r]) => [id, await decodeTransactionReceipt(r)] as [string, unknown])) } : data,
+  );

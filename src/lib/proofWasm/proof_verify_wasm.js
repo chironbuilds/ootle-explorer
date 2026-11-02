@@ -1,20 +1,47 @@
 /* @ts-self-types="./proof_verify_wasm.d.ts" */
 
 /**
+ * Decodes a base64 CBOR epoch checkpoint (Ootle 0.48+) to the JSON shape earlier indexers served.
+ * @param {string} checkpoint_b64
+ * @returns {string}
+ */
+export function decode_checkpoint(checkpoint_b64) {
+    let deferred3_0;
+    let deferred3_1;
+    try {
+        const ptr0 = passStringToWasm0(checkpoint_b64, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
+        const len0 = WASM_VECTOR_LEN;
+        const ret = wasm.decode_checkpoint(ptr0, len0);
+        var ptr2 = ret[0];
+        var len2 = ret[1];
+        if (ret[3]) {
+            ptr2 = 0; len2 = 0;
+            throw takeFromExternrefTable0(ret[2]);
+        }
+        deferred3_0 = ptr2;
+        deferred3_1 = len2;
+        return getStringFromWasm0(ptr2, len2);
+    } finally {
+        wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
+    }
+}
+
+/**
  * Validates an epoch checkpoint exactly as validators do when syncing (`EpochCheckpoint::validate`):
  * the end-of-epoch command is in the block, the QCs carry a quorum of the committee, the 3-chain rule
  * holds, and the shard roots hash to the header's state merkle root. `checkpoint_json` is the
- * indexer's `checkpoint` object verbatim.
+ * indexer's `checkpoint` field verbatim: base64 CBOR from Ootle 0.48, a JSON object before.
  * @param {string} checkpoint_json
+ * @param {number} network_byte
  * @param {string[]} committee_hex
  * @returns {any}
  */
-export function verify_checkpoint(checkpoint_json, committee_hex) {
+export function verify_checkpoint(checkpoint_json, network_byte, committee_hex) {
     const ptr0 = passStringToWasm0(checkpoint_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passArrayJsValueToWasm0(committee_hex, wasm.__wbindgen_malloc);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.verify_checkpoint(ptr0, len0, ptr1, len1);
+    const ret = wasm.verify_checkpoint(ptr0, len0, network_byte, ptr1, len1);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -23,7 +50,8 @@ export function verify_checkpoint(checkpoint_json, committee_hex) {
 
 /**
  * `committee_hex`: hex public keys of the shard group committee at the proof's epoch (1 vote each).
- * `value_json`: the substate value exactly as the indexer served it (`substate` field).
+ * `value_json`: the substate value exactly as the indexer served it (`substate` field): base64 CBOR
+ * from Ootle 0.48, serde JSON before.
  * @param {string} substate_id
  * @param {number} version
  * @param {string} value_json

@@ -28,10 +28,10 @@ export async function verifyEpochCheckpoint(
   checkpoint: unknown,
   header: { epoch: number; shard_group: { start: number; end_inclusive: number } },
 ): Promise<CheckpointVerification> {
-  const [wasm, validators] = await Promise.all([import("./proofWasm/proof_verify_wasm.js"), listValidators(500)]);
+  const [wasm, network, validators] = await Promise.all([import("./proofWasm/proof_verify_wasm.js"), getNetworkInfo(), listValidators(500)]);
   await wasm.default();
   const committee = committeeAt(validators.validators, header.shard_group, header.epoch);
-  const raw = JSON.parse(wasm.verify_checkpoint(JSON.stringify(checkpoint), committee)) as {
+  const raw = JSON.parse(wasm.verify_checkpoint(typeof checkpoint === "string" ? checkpoint : JSON.stringify(checkpoint), network.network_byte, committee)) as {
     ok: boolean;
     error: string | null;
     committee_size: number;
@@ -67,7 +67,7 @@ interface RawReport {
 }
 
 /** Checks a substate proof in the browser with the same Rust code the indexer runs (compiled to
- * WebAssembly from tari-ootle v0.45.0, loaded only when this is called -- it's ~600 KB):
+ * WebAssembly from tari-ootle v0.49.2, loaded only when this is called -- it's ~600 KB):
  *   1. the commit proof's quorum certificates carry a quorum of the shard group's committee, which
  *      makes `state_merkle_root` a root the committee signed; and
  *   2. the substate value, re-hashed here, is the leaf the value proof places under that root.
@@ -93,7 +93,8 @@ export async function verifySubstateProof(
     wasm.verify_proof(
       substateId,
       version,
-      JSON.stringify(substate),
+      // A base64 CBOR value (Ootle 0.48+) goes through as is; an older JSON value is stringified.
+      typeof substate === "string" ? substate : JSON.stringify(substate),
       proof.commit_proof,
       proof.value_proof,
       network.network_byte,

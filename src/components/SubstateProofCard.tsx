@@ -87,7 +87,7 @@ export function SubstateProofCard({
   });
   const proof = query.data?.proof;
   const verify = useMutation({
-    mutationFn: () => verifySubstateProof(id, query.data!.version!, query.data!.substate, query.data!.proof!),
+    mutationFn: () => verifySubstateProof(id, query.data!.version!, query.data!.raw_substate ?? query.data!.substate, query.data!.proof!),
   });
 
   const download = () => {

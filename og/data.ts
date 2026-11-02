@@ -5,6 +5,7 @@ import { formatMicroTari } from "../src/lib/format.js";
 import { getKnownAddress } from "../src/lib/knownAddresses.js";
 import { calledComponents, claimsBurn, isStealthTransaction, readTxBody } from "../src/lib/txShape.js";
 import { summarizeTransaction, TARI_RESOURCE, type SummaryPart } from "../src/lib/txSummary.js";
+import { decodeSubstateValue, decodeTransactionReceipt } from "./bor.js";
 
 const INDEXER = process.env.INDEXER_URL ?? "https://ootle-indexer-a.tari.com";
 const TIMEOUT_MS = 8_000;
@@ -24,6 +25,21 @@ export interface CardModel {
   verifiedLabel?: string;
   /** Text for the page `<meta>` description. */
   description: string;
+}
+
+/** `/substates/{id}` with the value flattened to `substate` -- 0.47 nests it under `state.up`/`state.down`
+ * and 0.48 also serves it as base64 CBOR; both fold into the old `{ substate, verified }` shape. */
+async function getSubstate<T extends object = SubstateLike>(id: string): Promise<(T & { verified?: boolean }) | null> {
+  const data = await getJson<{ substate?: unknown; state?: { up?: { substate?: unknown }; down?: { substate?: unknown } }; verified?: boolean }>(
+    `/substates/${encodeURIComponent(id)}`,
+  );
+  if (!data) return null;
+  const raw = data.substate ?? data.state?.up?.substate ?? data.state?.down?.substate;
+  try {
+    return { ...data, substate: await decodeSubstateValue(raw) } as unknown as T & { verified?: boolean };
+  } catch {
+    return null;
+  }
 }
 
 async function getJson<T>(path: string): Promise<T | null> {
@@ -50,7 +66,7 @@ async function labelFor(id: string, cache: Map<string, string>): Promise<{ label
   const isTemplate = /^[0-9a-f]{64}$/i.test(id);
   let templateAddress: string | undefined = isTemplate ? id : undefined;
   if (!isTemplate && id.startsWith("component_")) {
-    const sub = await getJson<SubstateLike>(`/substates/${encodeURIComponent(id)}`);
+    const sub = await getSubstate(id);
     templateAddress = sub?.substate?.Component?.header?.template_address;
   }
   if (!templateAddress) return { label: shortId(id), verified: false };
@@ -95,7 +111,7 @@ export function genericModel(): CardModel {
 }
 
 interface TxResponse {
-  transaction?: { transaction?: unknown; summary?: { outcome?: string } | null };
+  transaction?: { transaction?: unknown; summary?: { outcome?: string } | null; rejected_reason?: string | null };
 }
 
 export async function txModel(id: string): Promise<CardModel> {
@@ -108,14 +124,16 @@ export async function txModel(id: string): Promise<CardModel> {
   const names = new Map<string, string>();
 
   // Outcome: the receipt is the authoritative record and outlives the live result.
-  const receipt = await getJson<{ receipt?: { outcome?: string } }>(`/transaction-receipts/${id}`);
-  const outcome = tx.summary?.outcome ?? receipt?.receipt?.outcome ?? null;
+  const receiptRes = await getJson<{ receipt?: unknown }>(`/transaction-receipts/${id}`);
+  const receipt = receiptRes ? { receipt: (await decodeTransactionReceipt(receiptRes.receipt).catch(() => undefined)) as { outcome?: string } | undefined } : null;
+  // A rejected or aborted transaction has no summary or receipt (Ootle 0.49), only its reason.
+  const outcome = tx.summary?.outcome ?? receipt?.receipt?.outcome ?? (tx.rejected_reason ? "Failed" : null);
 
   // Burn: an explicit claim, or a call into a component whose template is flagged as a burn target.
   let burn = claimsBurn(body);
   if (!burn) {
     for (const component of calledComponents(body).slice(0, 4)) {
-      const sub = await getJson<SubstateLike>(`/substates/${encodeURIComponent(component)}`);
+      const sub = await getSubstate(component);
       const template = sub?.substate?.Component?.header?.template_address;
       if (template && getKnownAddress(template)?.burn) {
         burn = true;
@@ -165,9 +183,7 @@ const KIND_LABEL: Record<string, string> = {
 export async function substateModel(id: string): Promise<CardModel> {
   const kind = id.split("_")[0] ?? "";
   const kindLabel = KIND_LABEL[kind] ?? "Substate";
-  const sub = await getJson<{ verified?: boolean } & SubstateLike & { substate?: { Resource?: { metadata?: Record<string, string> } } }>(
-    `/substates/${encodeURIComponent(id)}`,
-  );
+  const sub = await getSubstate<SubstateLike & { substate?: { Resource?: { metadata?: Record<string, string> } } }>(id);
   if (!sub) {
     return { ...genericModel(), kind: "substate", title: kindLabel, ident: shortId(id), subtitle: "Open it on Veil to see the details." };
   }

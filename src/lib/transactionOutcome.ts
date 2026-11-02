@@ -23,8 +23,14 @@ export function deriveOutcomeFromResult(response: TransactionResultResponse | un
   const record = result as Record<string, unknown>;
 
   const finalized = record.Finalized;
-  if (finalized && typeof finalized === "object" && typeof (finalized as Record<string, unknown>).final_decision === "string") {
-    return (finalized as Record<string, unknown>).final_decision as TransactionOutcome;
+  if (finalized && typeof finalized === "object") {
+    // "Commit", or from Ootle 0.48 a tagged variant such as `{ "Abort": "ExecutionFailure" }`.
+    const decision = (finalized as Record<string, unknown>).final_decision;
+    if (typeof decision === "string") return decision as TransactionOutcome;
+    if (decision && typeof decision === "object") {
+      const [variant] = Object.keys(decision);
+      if (variant) return variant as TransactionOutcome;
+    }
   }
 
   // A transaction that never reached execution (e.g. rejected before that point) may be
