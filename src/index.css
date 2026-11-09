@@ -331,3 +331,40 @@ body {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Mainnet countdown */
+.countdown-card {
+  background:
+    radial-gradient(70% 120% at 88% 40%, var(--reveal-wash), transparent 70%),
+    radial-gradient(60% 120% at 0% 100%, var(--veil-wash), transparent 70%),
+    var(--surface);
+}
+@keyframes countdown-digit {
+  from { transform: translateY(45%); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+.countdown-digit {
+  display: inline-block;
+  animation: countdown-digit 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@keyframes eclipse-turn {
+  to { transform: rotate(360deg); }
+}
+@keyframes eclipse-breathe {
+  50% { opacity: 0.55; transform: scale(0.94); }
+}
+.eclipse-spin,
+.eclipse-spin-reverse,
+.eclipse-corona {
+  transform-box: view-box;
+  transform-origin: center;
+}
+.eclipse-spin { animation: eclipse-turn 48s linear infinite; }
+.eclipse-spin-reverse { animation: eclipse-turn 26s linear infinite reverse; }
+.eclipse-corona { animation: eclipse-breathe 4.5s ease-in-out infinite; }
+@media (prefers-reduced-motion: reduce) {
+  .countdown-digit,
+  .eclipse-spin,
+  .eclipse-spin-reverse,
+  .eclipse-corona { animation: none; }
+}

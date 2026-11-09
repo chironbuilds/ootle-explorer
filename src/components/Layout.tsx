@@ -8,7 +8,8 @@ import { ErrorBoundary } from "./ErrorBoundary";
 // Loaded on first open (Ctrl/Cmd+K): the palette and its address-decoding deps stay out of the first-load bundle.
 const CommandPalette = lazy(() => import("./CommandPalette").then((m) => ({ default: m.CommandPalette })));
 import { ThemeToggle } from "./ThemeToggle";
-import { INDEXER_URL, OTHER_EXPLORER } from "../lib/network";
+import { HAS_OTHER_EXPLORER, INDEXER_URL, OTHER_EXPLORER } from "../lib/network";
+import { useCutoverReload } from "./MainnetCountdown";
 
 function Logo() {
   return (
@@ -64,6 +65,7 @@ function NodeIdentity() {
 }
 
 export function Layout() {
+  useCutoverReload();
   const location = useLocation();
   const [paletteOpen, setPaletteOpen] = useState(false);
 
@@ -168,11 +170,16 @@ export function Layout() {
           <a href={INDEXER_URL} className="text-ink-dim hover:text-accent" target="_blank" rel="noreferrer">
             {new URL(INDEXER_URL).host}
           </a>
-          . Independent, unofficial project.{" "}
-          <a href={OTHER_EXPLORER.url} className="text-ink-dim hover:text-accent">
-            Go to the {OTHER_EXPLORER.label}
-          </a>
-          .
+          . Independent, unofficial project.
+          {HAS_OTHER_EXPLORER && (
+            <>
+              {" "}
+              <a href={OTHER_EXPLORER.url} className="text-ink-dim hover:text-accent">
+                Go to the {OTHER_EXPLORER.label}
+              </a>
+              .
+            </>
+          )}
         </p>
         <p className="mt-2">
           Building on Ootle?{" "}

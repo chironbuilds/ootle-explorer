@@ -16,6 +16,7 @@ import { LatestCheckpoint } from "../components/LatestCheckpoint";
 import { Sparkline } from "../components/Sparkline";
 import { StatTileSkeleton, TableRowsSkeleton } from "../components/Skeleton";
 import { TICKER } from "../lib/network";
+import { MainnetCountdown } from "../components/MainnetCountdown";
 
 const PAGE_SIZE = 20;
 
@@ -137,6 +138,7 @@ export default function HomePage() {
 
   return (
     <div>
+      <MainnetCountdown />
       <div className="fade-up mb-10">
         <h1 className="font-display text-3xl font-semibold tracking-tight text-ink">Tari Ootle, laid bare.</h1>
         <p className="mt-2 max-w-xl text-sm text-ink-dim">
