@@ -34,14 +34,17 @@ export function decode_checkpoint(checkpoint_b64) {
  * @param {string} checkpoint_json
  * @param {number} network_byte
  * @param {string[]} committee_hex
+ * @param {Uint32Array} committee_power
  * @returns {any}
  */
-export function verify_checkpoint(checkpoint_json, network_byte, committee_hex) {
+export function verify_checkpoint(checkpoint_json, network_byte, committee_hex, committee_power) {
     const ptr0 = passStringToWasm0(checkpoint_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passArrayJsValueToWasm0(committee_hex, wasm.__wbindgen_malloc);
     const len1 = WASM_VECTOR_LEN;
-    const ret = wasm.verify_checkpoint(ptr0, len0, network_byte, ptr1, len1);
+    const ptr2 = passArray32ToWasm0(committee_power, wasm.__wbindgen_malloc);
+    const len2 = WASM_VECTOR_LEN;
+    const ret = wasm.verify_checkpoint(ptr0, len0, network_byte, ptr1, len1, ptr2, len2);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -49,7 +52,8 @@ export function verify_checkpoint(checkpoint_json, network_byte, committee_hex) 
 }
 
 /**
- * `committee_hex`: hex public keys of the shard group committee at the proof's epoch (1 vote each).
+ * `committee_hex`, `committee_power`: hex public keys of the shard group committee at the proof's
+ * epoch, and each one's vote power.
  * `value_json`: the substate value exactly as the indexer served it (`substate` field): base64 CBOR
  * from Ootle 0.48, serde JSON before.
  * @param {string} substate_id
@@ -60,9 +64,10 @@ export function verify_checkpoint(checkpoint_json, network_byte, committee_hex) 
  * @param {number} network_byte
  * @param {bigint} value_hash_epoch
  * @param {string[]} committee_hex
+ * @param {Uint32Array} committee_power
  * @returns {any}
  */
-export function verify_proof(substate_id, version, value_json, commit_proof_b64, value_proof_b64, network_byte, value_hash_epoch, committee_hex) {
+export function verify_proof(substate_id, version, value_json, commit_proof_b64, value_proof_b64, network_byte, value_hash_epoch, committee_hex, committee_power) {
     const ptr0 = passStringToWasm0(substate_id, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
     const len0 = WASM_VECTOR_LEN;
     const ptr1 = passStringToWasm0(value_json, wasm.__wbindgen_malloc, wasm.__wbindgen_realloc);
@@ -73,7 +78,9 @@ export function verify_proof(substate_id, version, value_json, commit_proof_b64,
     const len3 = WASM_VECTOR_LEN;
     const ptr4 = passArrayJsValueToWasm0(committee_hex, wasm.__wbindgen_malloc);
     const len4 = WASM_VECTOR_LEN;
-    const ret = wasm.verify_proof(ptr0, len0, version, ptr1, len1, ptr2, len2, ptr3, len3, network_byte, value_hash_epoch, ptr4, len4);
+    const ptr5 = passArray32ToWasm0(committee_power, wasm.__wbindgen_malloc);
+    const len5 = WASM_VECTOR_LEN;
+    const ret = wasm.verify_proof(ptr0, len0, version, ptr1, len1, ptr2, len2, ptr3, len3, network_byte, value_hash_epoch, ptr4, len4, ptr5, len5);
     if (ret[2]) {
         throw takeFromExternrefTable0(ret[1]);
     }
@@ -132,6 +139,14 @@ function getStringFromWasm0(ptr, len) {
     return decodeText(ptr >>> 0, len);
 }
 
+let cachedUint32ArrayMemory0 = null;
+function getUint32ArrayMemory0() {
+    if (cachedUint32ArrayMemory0 === null || cachedUint32ArrayMemory0.byteLength === 0) {
+        cachedUint32ArrayMemory0 = new Uint32Array(wasm.memory.buffer);
+    }
+    return cachedUint32ArrayMemory0;
+}
+
 let cachedUint8ArrayMemory0 = null;
 function getUint8ArrayMemory0() {
     if (cachedUint8ArrayMemory0 === null || cachedUint8ArrayMemory0.byteLength === 0) {
@@ -142,6 +157,13 @@ function getUint8ArrayMemory0() {
 
 function isLikeNone(x) {
     return x === undefined || x === null;
+}
+
+function passArray32ToWasm0(arg, malloc) {
+    const ptr = malloc(arg.length * 4, 4) >>> 0;
+    getUint32ArrayMemory0().set(arg, ptr / 4);
+    WASM_VECTOR_LEN = arg.length;
+    return ptr;
 }
 
 function passArrayJsValueToWasm0(array, malloc) {
@@ -232,6 +254,7 @@ function __wbg_finalize_init(instance, module) {
     wasm = instance.exports;
     wasmModule = module;
     cachedDataViewMemory0 = null;
+    cachedUint32ArrayMemory0 = null;
     cachedUint8ArrayMemory0 = null;
     wasm.__wbindgen_start();
     return wasm;

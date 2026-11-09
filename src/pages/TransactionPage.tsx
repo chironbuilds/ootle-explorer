@@ -19,6 +19,8 @@ import { TxSummary } from "../components/TxSummary";
 import { SubstateProofCard } from "../components/SubstateProofCard";
 import { BurnFlame } from "../components/BurnFlame";
 import { useIsBurnTx } from "../lib/useBurnTx";
+import { TICKER } from "../lib/network";
+import { OtherNetworkHint } from "../components/OtherNetworkHint";
 
 /** Recursively finds the first array at a field named `key` -- the result envelope's exact
  * nesting (Finalized/Commit/Reject wrapping) varies more than is worth hand-modeling here. */
@@ -105,7 +107,7 @@ function UtxoSection({ upSubstates, downSubstates }: { upSubstates: [string, unk
               <Badge tone="reveal">created</Badge>
               <Hash value={id} />
               {minValuePromise > 0 ? (
-                <span className="tabular text-xs text-ink-dim">Minimum disclosed: ≥ {formatMicroTari(minValuePromise)} tTARI</span>
+                <span className="tabular text-xs text-ink-dim">Minimum disclosed: ≥ {formatMicroTari(minValuePromise)} {TICKER}</span>
               ) : (
                 <Badge tone="veil">Fully veiled</Badge>
               )}
@@ -192,6 +194,7 @@ export default function TransactionPage() {
           A 64-character hex value that isn't a known transaction could be something else instead -- a public key, commitment, or other hash.
           There's no way to tell them apart by shape alone.
         </p>
+        <OtherNetworkHint />
       </div>
     );
   if (!txQuery.data) return null;
@@ -241,7 +244,7 @@ export default function TransactionPage() {
         )}
         {tx.summary?.total_fees_paid !== undefined && (
           <KeyValueRow label="Fee paid">
-            <span className="tabular">{formatMicroTari(tx.summary.total_fees_paid ?? 0)} tTARI</span>
+            <span className="tabular">{formatMicroTari(tx.summary.total_fees_paid ?? 0)} {TICKER}</span>
           </KeyValueRow>
         )}
         {tx.rejected_reason && (

@@ -6,6 +6,7 @@ import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, Section
 import { Hash } from "../components/Hash";
 import { Disclosure } from "../components/Disclosure";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
+import { TICKER } from "../lib/network";
 
 /** One segment per validator, sized by its share of total vote power -- a consensus set this small
    is legible directly as a stacked bar, no chart library needed. Colors cycle through the app's
@@ -111,7 +112,7 @@ export default function ValidatorsPage() {
                     if (feeQuery.isError) return <span className="text-ink-faint">—</span>;
                     return (
                       <span className="flex flex-wrap items-center gap-1.5">
-                        <span className="tabular text-ink">{formatMicroTari(feeQuery.data!.toString())} tTARI</span>
+                        <span className="tabular text-ink">{formatMicroTari(feeQuery.data!.toString())} {TICKER}</span>
                         {group && group.validatorPublicKeys.length > 1 && (
                           <Badge tone="neutral" title="This claim key is shared by more than one validator -- the pool is per key, not per validator identity.">
                             shared with {group.validatorPublicKeys.length - 1} other{group.validatorPublicKeys.length - 1 === 1 ? "" : "s"}
@@ -157,7 +158,7 @@ export default function ValidatorsPage() {
                     ) : feeQuery?.isError ? (
                       "—"
                     ) : (
-                      `${formatMicroTari(feeQuery!.data!.toString())} tTARI`
+                      `${formatMicroTari(feeQuery!.data!.toString())} ${TICKER}`
                     )}
                   </span>
                   <div className="flex flex-wrap items-center gap-1.5">

@@ -40,7 +40,7 @@ function VerificationResult({ result }: { result: ProofVerification }) {
         title="Committee signed the anchor block"
         detail={
           result.commitOk
-            ? `Quorum certificates carry at least ${result.quorumThreshold} of ${result.committeeSize} committee members, so the state root was committee-signed.`
+            ? `Quorum certificates carry at least ${result.quorumThreshold} votes from the ${result.committeeSize}-member committee, so the state root was committee-signed.`
             : (result.commitError ?? "Commit proof check failed.")
         }
       />

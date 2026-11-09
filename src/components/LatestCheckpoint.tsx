@@ -69,7 +69,7 @@ export function LatestCheckpoint() {
           {verify.data && (
             <span className={`text-xs ${verify.data.ok ? "text-success" : "text-danger"}`}>
               {verify.data.ok
-                ? `✓ Verified in your browser: ${verify.data.quorumThreshold}+ of ${verify.data.committeeSize} committee members signed, and the shard roots match the signed state root.`
+                ? `✓ Verified in your browser: ${verify.data.quorumThreshold}+ votes from the ${verify.data.committeeSize}-member committee signed, and the shard roots match the signed state root.`
                 : `✗ Did not verify: ${verify.data.error ?? "unknown error"}`}
             </span>
           )}

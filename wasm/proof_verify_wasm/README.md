@@ -6,9 +6,9 @@ Source of the WebAssembly module in `src/lib/proofWasm/` that powers the "Verify
 substate page. It wraps the indexer's own verification code from
 [tari-ootle](https://github.com/tari-project/tari-ootle) so the browser runs the same checks.
 
-Built from tari-ootle **v0.49.2** (the version the live indexer reports):
+Built from tari-ootle **v0.50.1** (the version the live indexer reports):
 
-1. Extract the v0.49.2 source and drop this directory in as `crates/proof_verify_wasm`, adding it to the
+1. Extract the v0.50.1 source and drop this directory in as `crates/proof_verify_wasm`, adding it to the
    workspace `members` in the root `Cargo.toml`.
 2. In `crates/storage/src/lib.rs` change `mod state_store;` to `pub mod state_store;` (the verifier
    function is not otherwise exported).

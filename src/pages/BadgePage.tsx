@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { Card, PageHeader, SectionLabel } from "../components/ui";
 import { useDocumentTitle } from "../lib/useDocumentTitle";
+import { PUBLIC_ORIGIN } from "../lib/network";
 
-const ORIGIN = "https://explorer.tari.mw";
+const ORIGIN = PUBLIC_ORIGIN;
 
 function Snippet({ label, code }: { label: string; code: string }) {
   const [copied, setCopied] = useState(false);

@@ -8,6 +8,7 @@ import { ErrorBoundary } from "./ErrorBoundary";
 // Loaded on first open (Ctrl/Cmd+K): the palette and its address-decoding deps stay out of the first-load bundle.
 const CommandPalette = lazy(() => import("./CommandPalette").then((m) => ({ default: m.CommandPalette })));
 import { ThemeToggle } from "./ThemeToggle";
+import { INDEXER_URL, OTHER_EXPLORER } from "../lib/network";
 
 function Logo() {
   return (
@@ -164,10 +165,14 @@ export function Layout() {
       <footer className="mx-auto max-w-6xl px-5 py-10 text-xs text-ink-faint">
         <p>
           Veil reads live from the public Ootle indexer at{" "}
-          <a href="https://ootle-indexer-a.tari.com" className="text-ink-dim hover:text-accent" target="_blank" rel="noreferrer">
-            ootle-indexer-a.tari.com
+          <a href={INDEXER_URL} className="text-ink-dim hover:text-accent" target="_blank" rel="noreferrer">
+            {new URL(INDEXER_URL).host}
           </a>
-          . Independent, unofficial project.
+          . Independent, unofficial project.{" "}
+          <a href={OTHER_EXPLORER.url} className="text-ink-dim hover:text-accent">
+            Go to the {OTHER_EXPLORER.label}
+          </a>
+          .
         </p>
         <p className="mt-2">
           Building on Ootle?{" "}

@@ -1,7 +1,7 @@
 //! In-browser verification of an indexer-supplied substate proof, using the same code the indexer
 //! itself runs (`CommittedBlockProof::validate` + `verify_substate_value_proof_against_root`).
 
-use std::collections::HashSet;
+use std::collections::BTreeMap;
 
 use base64::Engine as _;
 use ootle_network::Network;
@@ -18,22 +18,25 @@ use tari_ootle_storage::{
 };
 use tari_sidechain::SigningCommittee;
 
-/// A committee of the supplied public keys, one vote each.
-struct Committee(Vec<Vec<u8>>);
+/// A committee of the supplied public keys and their vote power.
+struct Committee(Vec<(Vec<u8>, u64)>);
 
 impl Committee {
-    fn from_hex(keys: &[String]) -> Self {
-        let set: HashSet<Vec<u8>> = keys.iter().filter_map(|h| hex::decode(h).ok()).collect();
+    /// `powers` runs parallel to `keys`; Ootle 0.50 weights votes by each validator's power.
+    fn new(keys: &[String], powers: &[u32]) -> Self {
         // QC signer bitmaps index the committee in ascending key order, and the verifier insists on it.
-        let mut members: Vec<Vec<u8>> = set.into_iter().collect();
-        members.sort();
-        Self(members)
+        let members: BTreeMap<Vec<u8>, u64> = keys
+            .iter()
+            .zip(powers)
+            .filter_map(|(h, p)| hex::decode(h).ok().map(|k| (k, u64::from(*p))))
+            .collect();
+        Self(members.into_iter().collect())
     }
 
-    /// Same rule as CommitteeInfo::quorum_threshold: n - f, where f = (n - 1) / 3.
+    /// Same rule as `quorum_threshold_of`: n - f over total vote power, where f = (n - 1) / 3.
     fn threshold(&self) -> u64 {
-        let n = self.0.len() as u64;
-        if n == 0 { 0 } else { n - (n - 1) / 3 }
+        let n: u64 = self.0.iter().map(|(_, p)| *p).sum();
+        n.saturating_sub(n.saturating_sub(1) / 3)
     }
 }
 
@@ -43,7 +46,7 @@ impl SigningCommittee for Committee {
     }
 
     fn member(&self, index: usize) -> Option<(&[u8], u64)> {
-        self.0.get(index).map(|k| (k.as_slice(), 1))
+        self.0.get(index).map(|(k, p)| (k.as_slice(), *p))
     }
 }
 
@@ -77,7 +80,8 @@ struct Report {
     state_merkle_root: Option<String>,
 }
 
-/// `committee_hex`: hex public keys of the shard group committee at the proof's epoch (1 vote each).
+/// `committee_hex`, `committee_power`: hex public keys of the shard group committee at the proof's
+/// epoch, and each one's vote power.
 /// `value_json`: the substate value exactly as the indexer served it (`substate` field): base64 CBOR
 /// from Ootle 0.48, serde JSON before.
 #[wasm_bindgen]
@@ -90,6 +94,7 @@ pub fn verify_proof(
     network_byte: u8,
     value_hash_epoch: u64,
     committee_hex: Vec<String>,
+    committee_power: Vec<u32>,
 ) -> Result<JsValue, JsValue> {
     let report = run(
         substate_id,
@@ -100,6 +105,7 @@ pub fn verify_proof(
         network_byte,
         value_hash_epoch,
         committee_hex,
+        committee_power,
     );
     serde_wasm_json(&report)
 }
@@ -119,6 +125,7 @@ fn run(
     network_byte: u8,
     value_hash_epoch: u64,
     committee_hex: Vec<String>,
+    committee_power: Vec<u32>,
 ) -> Report {
     let mut report = Report::default();
     let b64 = base64::engine::general_purpose::STANDARD;
@@ -149,7 +156,7 @@ fn run(
             return report;
         },
     };
-    let committee = Committee::from_hex(&committee_hex);
+    let committee = Committee::new(&committee_hex, &committee_power);
     let threshold = committee.threshold();
     report.committee_size = committee.len();
     report.quorum_threshold = threshold;
@@ -220,9 +227,14 @@ struct CheckpointReport {
 /// holds, and the shard roots hash to the header's state merkle root. `checkpoint_json` is the
 /// indexer's `checkpoint` field verbatim: base64 CBOR from Ootle 0.48, a JSON object before.
 #[wasm_bindgen]
-pub fn verify_checkpoint(checkpoint_json: &str, network_byte: u8, committee_hex: Vec<String>) -> Result<JsValue, JsValue> {
+pub fn verify_checkpoint(
+    checkpoint_json: &str,
+    network_byte: u8,
+    committee_hex: Vec<String>,
+    committee_power: Vec<u32>,
+) -> Result<JsValue, JsValue> {
     let mut report = CheckpointReport::default();
-    let committee = Committee::from_hex(&committee_hex);
+    let committee = Committee::new(&committee_hex, &committee_power);
     let threshold = committee.threshold();
     report.committee_size = committee.len();
     report.quorum_threshold = threshold;

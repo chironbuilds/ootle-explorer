@@ -1,16 +1,15 @@
 import { getNetworkInfo, listValidators, type SubstateProof, type Validator } from "./indexer";
 
-/** Public keys of the validators that sat on a shard group's committee at `epoch` (1 vote each). */
-function committeeAt(validators: Validator[], shardGroup: { start: number; end_inclusive: number }, epoch: number): string[] {
-  return validators
-    .filter(
-      (v) =>
-        v.shard_group.start === shardGroup.start &&
-        v.shard_group.end_inclusive === shardGroup.end_inclusive &&
-        v.start_epoch <= epoch &&
-        (v.end_epoch === null || v.end_epoch >= epoch),
-    )
-    .map((v) => v.public_key);
+/** Public keys and vote power of the validators on a shard group's committee at `epoch`. */
+function committeeAt(validators: Validator[], shardGroup: { start: number; end_inclusive: number }, epoch: number) {
+  const members = validators.filter(
+    (v) =>
+      v.shard_group.start === shardGroup.start &&
+      v.shard_group.end_inclusive === shardGroup.end_inclusive &&
+      v.start_epoch <= epoch &&
+      (v.end_epoch === null || v.end_epoch >= epoch),
+  );
+  return { keys: members.map((v) => v.public_key), power: Uint32Array.from(members, (v) => v.vote_power) };
 }
 
 export interface CheckpointVerification {
@@ -31,7 +30,7 @@ export async function verifyEpochCheckpoint(
   const [wasm, network, validators] = await Promise.all([import("./proofWasm/proof_verify_wasm.js"), getNetworkInfo(), listValidators(500)]);
   await wasm.default();
   const committee = committeeAt(validators.validators, header.shard_group, header.epoch);
-  const raw = JSON.parse(wasm.verify_checkpoint(typeof checkpoint === "string" ? checkpoint : JSON.stringify(checkpoint), network.network_byte, committee)) as {
+  const raw = JSON.parse(wasm.verify_checkpoint(typeof checkpoint === "string" ? checkpoint : JSON.stringify(checkpoint), network.network_byte, committee.keys, committee.power)) as {
     ok: boolean;
     error: string | null;
     committee_size: number;
@@ -67,7 +66,7 @@ interface RawReport {
 }
 
 /** Checks a substate proof in the browser with the same Rust code the indexer runs (compiled to
- * WebAssembly from tari-ootle v0.49.2, loaded only when this is called -- it's ~600 KB):
+ * WebAssembly from tari-ootle v0.50.1, loaded only when this is called -- it's ~600 KB):
  *   1. the commit proof's quorum certificates carry a quorum of the shard group's committee, which
  *      makes `state_merkle_root` a root the committee signed; and
  *   2. the substate value, re-hashed here, is the leaf the value proof places under that root.
@@ -99,7 +98,8 @@ export async function verifySubstateProof(
       proof.value_proof,
       network.network_byte,
       BigInt(proof.value_hash_epoch),
-      committee,
+      committee.keys,
+      committee.power,
     ),
   ) as RawReport;
 

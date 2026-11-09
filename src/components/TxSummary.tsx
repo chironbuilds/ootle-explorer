@@ -5,6 +5,7 @@ import { shortHash } from "../lib/useDocumentTitle";
 import type { TxBody } from "../lib/txShape";
 import { TemplateNameTag } from "./TemplateNameTag";
 import { Card } from "./ui";
+import { TICKER } from "../lib/network";
 
 /** `component_2e91…6029` -- keeps the kind prefix, which the generic 8-character shortener would eat. */
 function shortAddress(id: string): string {
@@ -16,7 +17,7 @@ function Part({ part }: { part: SummaryPart }) {
   if (part.kind === "amount") {
     // Only TARI's divisibility is known without a lookup; anything else is shown in raw units.
     return part.resource === TARI_RESOURCE ? (
-      <strong className="tabular font-semibold text-ink">{formatMicroTari(part.raw)} tTARI</strong>
+      <strong className="tabular font-semibold text-ink">{formatMicroTari(part.raw)} {TICKER}</strong>
     ) : (
       <strong className="tabular font-semibold text-ink" title="Raw units: this resource's decimals aren't known here">
         {part.raw} units{part.resource ? ` of ${shortHash(part.resource)}` : ""}

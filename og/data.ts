@@ -8,6 +8,8 @@ import { summarizeTransaction, TARI_RESOURCE, type SummaryPart } from "../src/li
 import { decodeSubstateValue, decodeTransactionReceipt } from "./bor.js";
 
 const INDEXER = process.env.INDEXER_URL ?? "https://ootle-indexer-a.tari.com";
+const TICKER = process.env.TICKER ?? "tTARI";
+const PUBLIC_HOST = new URL(process.env.PUBLIC_ORIGIN ?? "https://explorer.tari.mw").host;
 const TIMEOUT_MS = 8_000;
 const ACCOUNT_TEMPLATE = "0".repeat(64);
 
@@ -89,7 +91,7 @@ async function partsToText(parts: SummaryPart[], names: Map<string, string>): Pr
   for (const part of parts) {
     if (part.kind === "text") text += part.text;
     else if (part.kind === "amount") {
-      text += part.resource === TARI_RESOURCE ? `${formatMicroTari(part.raw)} tTARI` : `${part.raw} units`;
+      text += part.resource === TARI_RESOURCE ? `${formatMicroTari(part.raw)} ${TICKER}` : `${part.raw} units`;
     } else {
       const { label, verified: v } = await labelFor(part.id, names);
       text += label;
@@ -104,7 +106,7 @@ export function genericModel(): CardModel {
     kind: "generic",
     title: "Tari Ootle, laid bare.",
     subtitle: "Live transactions, substates and templates, including which transfers stay confidential.",
-    ident: "explorer.tari.mw",
+    ident: PUBLIC_HOST,
     badges: [],
     description: "Veil: an explorer for the Tari Ootle layer 2.",
   };

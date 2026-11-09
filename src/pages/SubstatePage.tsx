@@ -15,6 +15,7 @@ import { NftDetail } from "../components/NftDetail";
 import { ResourceDetail } from "../components/ResourceDetail";
 import { ShareButton } from "../components/ShareButton";
 import { useDocumentTitle, shortHash } from "../lib/useDocumentTitle";
+import { OtherNetworkHint } from "../components/OtherNetworkHint";
 
 interface ComponentSubstate {
   header?: { template_address?: string; owner_rule?: { ByPublicKey?: string } };
@@ -110,7 +111,10 @@ export default function SubstatePage() {
             still cached.
           </Card>
         ) : (
-          <ErrorBlock message={(query.error as Error).message} />
+          <>
+            <ErrorBlock message={(query.error as Error).message} />
+            <OtherNetworkHint />
+          </>
         ))}
       {query.data && (
         <>

@@ -8,9 +8,10 @@
 // space is large and still evolving, and a generic viewer is also just how explorers usually
 // present raw call data.
 
+import { INDEXER_URL } from "./network";
 import { decodeEvent, decodeExecuteResult, decodeResource, decodeSubstateValue, decodeTransactionReceipt } from "./bor";
 
-export const INDEXER_URL = import.meta.env.VITE_INDEXER_URL ?? "https://ootle-indexer-a.tari.com";
+export { INDEXER_URL };
 
 export class IndexerError extends Error {
   readonly status?: number;
@@ -376,16 +377,18 @@ export interface TemplateFunctionArg {
   arg_type: unknown;
 }
 
+export type TemplateFunctionKind = "Function" | { Method: "Ref" | "RefMut" } | { Migration: { from: unknown } };
+
 export interface TemplateFunction {
   name: string;
+  kind: TemplateFunctionKind;
   arguments: TemplateFunctionArg[];
   output: unknown;
-  is_mut: boolean;
 }
 
 export interface TemplateDetailResponse {
   name: string;
-  definition?: { V1?: { template_name: string; abi_version: number; functions: TemplateFunction[] } };
+  definition?: { V2?: { template_name: string; abi_version: number; functions: TemplateFunction[] } };
   code_size: number;
 }
 

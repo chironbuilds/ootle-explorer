@@ -15,6 +15,7 @@ import { Pagination } from "../components/Pagination";
 import { LatestCheckpoint } from "../components/LatestCheckpoint";
 import { Sparkline } from "../components/Sparkline";
 import { StatTileSkeleton, TableRowsSkeleton } from "../components/Skeleton";
+import { TICKER } from "../lib/network";
 
 const PAGE_SIZE = 20;
 
@@ -158,11 +159,11 @@ export default function HomePage() {
             <StatTile
               label="Total supply"
               value={economics.data ? roundLarge(formatMicroTari(economics.data.total_supply)) : "—"}
-              title={economics.data ? formatMicroTari(economics.data.total_supply) + " tTARI" : undefined}
-              sub="tTARI"
+              title={economics.data ? `${formatMicroTari(economics.data.total_supply)} ${TICKER}` : undefined}
+              sub={TICKER}
               accent="reveal"
             />
-            <StatTile label="Fee volume" value={economics.data ? formatMicroTari(economics.data.fee_volume) : "—"} sub="tTARI" accent="veil" />
+            <StatTile label="Fee volume" value={economics.data ? formatMicroTari(economics.data.fee_volume) : "—"} sub={TICKER} accent="veil" />
             <StatTile
               label="Receipts"
               value={economics.data ? formatNumber(economics.data.transaction_receipt_count) : "—"}

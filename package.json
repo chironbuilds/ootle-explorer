@@ -6,6 +6,7 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
+    "build:mainnet": "tsc -b && vite build --mode mainnet --outDir dist-mainnet",
     "build:api": "tsc -p tsconfig.api-build.json",
     "lint": "oxlint",
     "preview": "vite preview"

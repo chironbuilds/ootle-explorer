@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { useParams } from "react-router-dom";
-import { getTemplate, listCachedTemplates } from "../lib/indexer";
+import { getTemplate, listCachedTemplates, type TemplateFunctionKind } from "../lib/indexer";
 import { formatArgType } from "../lib/templateAbi";
 import { Badge, Card, ErrorBlock, KeyValueRow, LoadingBlock, PageHeader, SectionLabel } from "../components/ui";
 import { Hash } from "../components/Hash";
@@ -25,7 +25,7 @@ export default function TemplatePage() {
   const catalogue = useQuery({ queryKey: ["templates"], queryFn: () => listCachedTemplates() });
   const meta = catalogue.data?.entries.find((t) => t.template_address === address);
 
-  const functions = detail.data?.definition?.V1?.functions ?? [];
+  const functions = detail.data?.definition?.V2?.functions ?? [];
 
   return (
     <div>
@@ -72,7 +72,7 @@ export default function TemplatePage() {
               functions.map((f) => (
                 <div key={f.name} className="border-b border-border-soft px-5 py-4 last:border-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <Badge tone={f.is_mut ? "veil" : "accent"}>{f.is_mut ? "mut" : "view"}</Badge>
+                    <FunctionKindBadge kind={f.kind} />
                     <span className="font-mono text-sm font-medium text-ink">{f.name}</span>
                   </div>
                   <div className="mt-2 break-all font-mono text-xs text-ink-dim">
@@ -86,4 +86,11 @@ export default function TemplatePage() {
       )}
     </div>
   );
+}
+
+function FunctionKindBadge({ kind }: { kind: TemplateFunctionKind }) {
+  if (kind === "Function") return <Badge tone="accent">static</Badge>;
+  if ("Migration" in kind) return <Badge tone="veil">migration</Badge>;
+  // The receiver, not a promise about state: `&self` methods such as Account::withdraw still move funds.
+  return kind.Method === "RefMut" ? <Badge tone="veil">&amp;mut self</Badge> : <Badge tone="accent">&amp;self</Badge>;
 }

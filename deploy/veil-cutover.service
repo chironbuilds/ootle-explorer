@@ -1,0 +1,9 @@
+[Unit]
+Description=Move explorer.tari.mw to mainnet once the mainnet indexer is serving
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/bin/veil-cutover --wait
+TimeoutStartSec=infinity

@@ -98,7 +98,7 @@ export async function renderCard(model: CardModel): Promise<Buffer> {
       ]),
       h("div", { display: "flex", justifyContent: "space-between", alignItems: "center", fontSize: 28, color: "#5b6270" }, [
         h("div", { display: "flex", fontFamily: "Plex Mono", fontWeight: 500 }, model.ident),
-        h("div", { display: "flex" }, "explorer.tari.mw"),
+        h("div", { display: "flex" }, new URL(process.env.PUBLIC_ORIGIN ?? "https://explorer.tari.mw").host),
       ]),
     ],
   );
