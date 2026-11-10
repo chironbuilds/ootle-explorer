@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { INDEXER_URL, NETWORK } from "../lib/network";
 
-const LAUNCH = Date.UTC(2026, 10, 11, 11, 11, 0);
+const LAUNCH = Date.UTC(2026, 10, 11, 5, 0, 0);
 const HOUR = 3_600_000;
 const ECLIPSE_SPAN = 72 * HOUR; // the veil starts sliding this long before launch
 const SHOW_AFTER_LAUNCH = 72 * HOUR;
